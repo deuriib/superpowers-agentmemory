@@ -294,6 +294,34 @@ export async function cmdPlanSync(planPath) {
 
 SUBCOMMANDS['plan-sync'] = cmdPlanSync;
 
+export const DEFAULT_TTL_MS = 60 * 60 * 1000;
+
+export async function cmdTaskClaim(actionId) {
+  if (!actionId) {
+    console.error('task-claim: missing <actionId> argument\n\n' + usage());
+    return 1;
+  }
+  const agent = agentId();
+  const acquire = await apiRequest('POST', '/leases/acquire', {
+    body: { actionId, agentId: agent, ttlMs: DEFAULT_TTL_MS },
+  });
+  if (!acquire.ok) {
+    console.error(`task-claim: leases/acquire failed (${acquire.status}): ${JSON.stringify(acquire.json)}`);
+    return 1;
+  }
+  const update = await apiRequest('POST', '/actions/update', {
+    body: { actionId, status: 'active', assignedTo: agent },
+  });
+  if (!update.ok) {
+    console.error(`task-claim: actions/update failed (${update.status}): ${JSON.stringify(update.json)}`);
+    return 1;
+  }
+  console.log(`task-claim: ${actionId} claimed by ${agent} (lease ${DEFAULT_TTL_MS}ms)`);
+  return 0;
+}
+
+SUBCOMMANDS['task-claim'] = cmdTaskClaim;
+
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
 }
