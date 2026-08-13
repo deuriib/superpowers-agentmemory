@@ -221,6 +221,79 @@ export function parsePlan(markdown) {
   return tasks;
 }
 
+export const MAX_DESCRIPTION_CHARS = 2000;
+
+export async function cmdPlanSync(planPath) {
+  if (!planPath) {
+    console.error('plan-sync: missing <planfile> argument\n\n' + usage());
+    return 1;
+  }
+  let markdown;
+  try {
+    markdown = await Bun.file(planPath).text();
+  } catch (err) {
+    console.error(`plan-sync: cannot read ${planPath}: ${err.message}`);
+    return 1;
+  }
+  const tasks = parsePlan(markdown);
+  if (tasks.length === 0) {
+    console.error(`plan-sync: no "### Task N:" headers found in ${planPath}`);
+    return 1;
+  }
+
+  const project = process.env.AGENTMEMORY_PROJECT;
+  const byIndex = new Map();
+  for (const task of tasks) {
+    const body = {
+      title: `[${task.index}] ${task.title}`,
+      description: task.body.slice(0, MAX_DESCRIPTION_CHARS),
+      tags: ['plan-sync'],
+    };
+    if (project) body.project = project;
+    const result = await apiRequest('POST', '/actions', { body });
+    if (!result.ok) {
+      console.error(`plan-sync: actions create failed for task ${task.index} (${result.status}): ${JSON.stringify(result.json)}`);
+      return 1;
+    }
+    const actionId = extractActionId(result.json);
+    if (!actionId) {
+      console.error(`plan-sync: actions create for task ${task.index} returned no actionId: ${JSON.stringify(result.json)}`);
+      return 1;
+    }
+    byIndex.set(task.index, actionId);
+  }
+
+  const edges = [];
+  for (const task of tasks) {
+    const sourceActionId = byIndex.get(task.index);
+    for (const dep of task.requires) {
+      const targetActionId = byIndex.get(dep);
+      if (!targetActionId) {
+        console.warn(`plan-sync: task ${task.index} requires unknown task ${dep} — edge skipped`);
+        continue;
+      }
+      const result = await apiRequest('POST', '/actions/edges', {
+        body: { sourceActionId, targetActionId, type: 'requires' },
+      });
+      if (!result.ok) {
+        console.error(`plan-sync: edge create failed (${result.status}) for task ${task.index} -> ${dep}: ${JSON.stringify(result.json)}`);
+        return 1;
+      }
+      edges.push({ source: task.index, target: dep });
+    }
+  }
+
+  const actions = tasks.map((task) => ({
+    task: task.index,
+    actionId: byIndex.get(task.index),
+    title: `[${task.index}] ${task.title}`,
+  }));
+  console.log(JSON.stringify({ plan: planPath, actions, edges }, null, 2));
+  return 0;
+}
+
+SUBCOMMANDS['plan-sync'] = cmdPlanSync;
+
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
 }
