@@ -192,6 +192,35 @@ export async function cmdBackfill(...dirs) {
 
 SUBCOMMANDS.backfill = cmdBackfill;
 
+const TASK_HEADER_RE = /^### Task (\d+): (.+)$/gm;
+
+export function parsePlan(markdown) {
+  const tasks = [];
+  const headers = [];
+  let match;
+  while ((match = TASK_HEADER_RE.exec(markdown)) !== null) {
+    headers.push({ index: Number(match[1]), title: match[2].trim(), start: match.index + match[0].length });
+  }
+  for (let i = 0; i < headers.length; i += 1) {
+    const header = headers[i];
+    const end = i + 1 < headers.length ? headers[i + 1].start : markdown.length;
+    const body = markdown.slice(header.start, end).trim();
+    // Fresh regex per body: a module-level /g regex would keep lastIndex
+    // across bodies and silently skip matches.
+    // (?:\*\*)? after the colon handles bold markdown like "- **Consumes:** Task 2",
+    // where the closing stars sit between the colon and the reference.
+    const depRe = /^\s*(?:[-*]\s*)?(?:\*\*)?(?:consumes|requires):(?:\*\*)?\s*task\s+(\d+)/gim;
+    const requires = [];
+    let dep;
+    while ((dep = depRe.exec(body)) !== null) {
+      const n = Number(dep[1]);
+      if (!requires.includes(n)) requires.push(n);
+    }
+    tasks.push({ index: header.index, title: header.title, body, requires });
+  }
+  return tasks;
+}
+
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
 }
