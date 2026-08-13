@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import fs from 'fs';
+import path from 'path';
 // scripts/agentmemory-bridge.mjs
 // Zero-dependency agentmemory bridge for the superpowers fork.
 // Subcommands: health, plan-sync, task-claim, task-done, session-close, backfill.
@@ -124,6 +126,71 @@ export async function cmdHealth() {
 }
 
 SUBCOMMANDS.health = cmdHealth;
+
+export const MAX_CONTENT_CHARS = 8000;
+export const DEFAULT_BACKFILL_DIRS = ['docs/superpowers/specs', 'docs/superpowers/plans'];
+
+export function truncate(text, maxChars) {
+  if (text.length <= maxChars) return text;
+  return text.slice(0, maxChars) + '\n...[truncated]';
+}
+
+export function walkMarkdownFiles(dir) {
+  const files = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0
+  );
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkMarkdownFiles(full));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+export async function cmdBackfill(...dirs) {
+  const targets = dirs.length > 0 ? dirs : DEFAULT_BACKFILL_DIRS;
+  const project = process.env.AGENTMEMORY_PROJECT;
+  let indexed = 0;
+  let failed = 0;
+  for (const dir of targets) {
+    let files;
+    try {
+      files = walkMarkdownFiles(dir);
+    } catch (err) {
+      console.error(`backfill: cannot read ${dir}: ${err.message}`);
+      failed += 1;
+      continue;
+    }
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8');
+      const relPath = path.relative(process.cwd(), file).split(path.sep).join('/');
+      const isSpec = relPath.includes('/specs/');
+      const body = {
+        content: truncate(content, MAX_CONTENT_CHARS),
+        type: isSpec ? 'spec' : 'plan',
+        concepts: [isSpec ? 'source:spec' : 'source:plan', path.basename(file, '.md')],
+        files: [relPath],
+      };
+      if (project) body.project = project;
+      const result = await apiRequest('POST', '/remember', { body });
+      if (!result.ok) {
+        console.error(`backfill: remember failed for ${relPath} (${result.status}): ${JSON.stringify(result.json)}`);
+        failed += 1;
+      } else {
+        indexed += 1;
+        console.log(`backfill: indexed ${relPath}`);
+      }
+    }
+  }
+  console.log(`backfill: ${indexed} indexed, ${failed} failed`);
+  return failed === 0 ? 0 : 1;
+}
+
+SUBCOMMANDS.backfill = cmdBackfill;
 
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
