@@ -347,6 +347,70 @@ export async function cmdTaskDone(actionId, resultText) {
 
 SUBCOMMANDS['task-done'] = cmdTaskDone;
 
+export const SLOT_LABEL = 'session-summary';
+export const SLOT_FALLBACK_CONCEPT = 'slot:session-summary';
+
+export async function cmdSessionClose(sessionId, ...actionIds) {
+  if (!sessionId) {
+    console.error('session-close: missing <sessionId> argument\n\n' + usage());
+    return 1;
+  }
+  const project = process.env.AGENTMEMORY_PROJECT;
+
+  const summary = await apiRequest('POST', '/summarize', { body: { sessionId } });
+  if (!summary.ok) {
+    console.error(`session-close: summarize failed (${summary.status}) — the server needs an LLM provider key; no summary stored`);
+    return 1;
+  }
+  const summaryText = extractSummaryText(summary.json);
+  if (!summaryText) {
+    console.error(`session-close: summarize returned no summary text: ${JSON.stringify(summary.json)}`);
+    return 1;
+  }
+
+  const slot = await apiRequest('POST', '/slot', {
+    body: { label: SLOT_LABEL, content: summaryText, pinned: true },
+  });
+  if (!slot.ok) {
+    console.warn(`session-close: slot unavailable (${slot.status}) — falling back to remember`);
+    const rememberBody = { content: summaryText, type: 'summary', concepts: [SLOT_FALLBACK_CONCEPT] };
+    if (project) rememberBody.project = project;
+    const remembered = await apiRequest('POST', '/remember', { body: rememberBody });
+    if (!remembered.ok) {
+      console.error(`session-close: remember fallback failed (${remembered.status}): ${JSON.stringify(remembered.json)}`);
+      return 1;
+    }
+  }
+
+  if (actionIds.length > 0) {
+    let allClosed = true;
+    for (const actionId of actionIds) {
+      const check = await apiRequest('GET', '/actions/get', { query: { actionId } });
+      const status = check.ok ? extractStatus(check.json) : null;
+      if (status !== 'done' && status !== 'cancelled') {
+        console.error(`session-close: action ${actionId} has status ${status ?? 'unknown'} — crystals/create requires every action done or cancelled`);
+        allClosed = false;
+      }
+    }
+    if (allClosed) {
+      const crystalBody = { actionIds, sessionId };
+      if (project) crystalBody.project = project;
+      const crystal = await apiRequest('POST', '/crystals/create', { body: crystalBody });
+      if (!crystal.ok) {
+        console.error(`session-close: crystals/create failed (${crystal.status}) — every action must be done or cancelled, and the server needs an LLM provider key`);
+        return 1;
+      }
+    } else {
+      return 1;
+    }
+  }
+
+  console.log(`session-close: ${sessionId} summarized and stored`);
+  return 0;
+}
+
+SUBCOMMANDS['session-close'] = cmdSessionClose;
+
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
 }
