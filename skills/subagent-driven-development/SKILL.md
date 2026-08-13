@@ -566,3 +566,18 @@ Final reviewer: All requirements met. Deferred minors triaged: none block merge.
 
 Done! Using superpowers:finishing-a-development-branch.
 ```
+
+## Optional: agentmemory bridge (fork-local)
+
+This fork pairs with the agentmemory bridge. When the plan has been synced
+(`plan-sync`), claim each task before dispatching its implementer and mark it
+done when the review passes:
+
+```bash
+bun scripts/agentmemory-bridge.mjs task-claim <actionId>   # after plan-sync prints it
+bun scripts/agentmemory-bridge.mjs task-done <actionId> "review clean"
+```
+
+`task-claim` acquires a lease (one subagent per action) and marks the action
+active; `task-done` releases the lease and marks it done. Skip both when the
+server is unreachable.

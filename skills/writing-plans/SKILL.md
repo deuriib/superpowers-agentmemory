@@ -169,3 +169,16 @@ After saving the plan, offer execution choice:
 **If Inline Execution chosen:**
 - **REQUIRED SUB-SKILL:** Use superpowers:executing-plans
 - Batch execution with checkpoints for review
+
+## Optional: agentmemory bridge (fork-local)
+
+This fork pairs with the agentmemory bridge. After saving the plan, sync its
+tasks into the memory action DAG:
+
+```bash
+bun scripts/agentmemory-bridge.mjs plan-sync docs/superpowers/plans/<plan-file>.md
+```
+
+The bridge prints a JSON map of task numbers to action IDs. The plan file on
+disk stays the source of truth; the DAG is a retrievable mirror. Skip this
+step when the server is unreachable — the workflow does not depend on it.
