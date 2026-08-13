@@ -322,6 +322,31 @@ export async function cmdTaskClaim(actionId) {
 
 SUBCOMMANDS['task-claim'] = cmdTaskClaim;
 
+export async function cmdTaskDone(actionId, resultText) {
+  if (!actionId) {
+    console.error('task-done: missing <actionId> argument\n\n' + usage());
+    return 1;
+  }
+  const releaseBody = { actionId, agentId: agentId() };
+  if (resultText) releaseBody.result = resultText;
+  const release = await apiRequest('POST', '/leases/release', { body: releaseBody });
+  if (!release.ok) {
+    console.error(`task-done: leases/release failed (${release.status}): ${JSON.stringify(release.json)}`);
+    return 1;
+  }
+  const updateBody = { actionId, status: 'done' };
+  if (resultText) updateBody.result = resultText;
+  const update = await apiRequest('POST', '/actions/update', { body: updateBody });
+  if (!update.ok) {
+    console.error(`task-done: actions/update failed (${update.status}): ${JSON.stringify(update.json)}`);
+    return 1;
+  }
+  console.log(`task-done: ${actionId} marked done`);
+  return 0;
+}
+
+SUBCOMMANDS['task-done'] = cmdTaskDone;
+
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
 }
