@@ -55,6 +55,76 @@ export async function main(argv) {
   }
 }
 
+export function agentId() {
+  return process.env.AGENTMEMORY_AGENT_ID || 'superpowers-agent';
+}
+
+export function extractActionId(json) {
+  if (!json || typeof json !== 'object') return null;
+  if (typeof json.actionId === 'string') return json.actionId;
+  if (typeof json.id === 'string') return json.id;
+  if (json.action && typeof json.action.id === 'string') return json.action.id;
+  return null;
+}
+
+export function extractStatus(json) {
+  if (!json || typeof json !== 'object') return null;
+  if (typeof json.status === 'string') return json.status;
+  if (json.action && typeof json.action.status === 'string') return json.action.status;
+  return null;
+}
+
+export function extractSummaryText(json) {
+  if (!json || typeof json !== 'object') return null;
+  for (const key of ['summary', 'content', 'text']) {
+    if (typeof json[key] === 'string') return json[key];
+  }
+  return null;
+}
+
+export async function apiRequest(method, path, { query, body } = {}) {
+  const url = new URL(baseUrl() + path);
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+    }
+  }
+  const headers = { 'Content-Type': 'application/json' };
+  if (process.env.AGENTMEMORY_SECRET) {
+    headers.Authorization = `Bearer ${process.env.AGENTMEMORY_SECRET}`;
+  }
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  let json = null;
+  try {
+    json = await response.json();
+  } catch {
+    // non-JSON body — json stays null
+  }
+  return { status: response.status, ok: response.ok, json };
+}
+
+export async function cmdHealth() {
+  let result;
+  try {
+    result = await apiRequest('GET', '/livez');
+  } catch (err) {
+    console.error(`health: server unreachable at ${baseUrl()}: ${err.message}`);
+    return 1;
+  }
+  if (!result.ok) {
+    console.error(`health: server returned ${result.status}`);
+    return 1;
+  }
+  console.log(`healthy: agentmemory reachable at ${baseUrl()}`);
+  return 0;
+}
+
+SUBCOMMANDS.health = cmdHealth;
+
 if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)));
 }
