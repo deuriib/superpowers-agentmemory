@@ -55,6 +55,19 @@ test('session-close exits 1 when summarize fails', async () => {
   }
 });
 
+test('session-close summarize failure includes the server body as evidence', async () => {
+  const mock = startMockServer();
+  try {
+    mock.routes.set('POST /agentmemory/summarize', { status: 500, body: { error: 'boom' } });
+    const { exitCode, stderr } = await runBridge(['session-close', 's1'], { AGENTMEMORY_URL: mock.url });
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('summarize failed');
+    expect(stderr).toContain('boom');
+  } finally {
+    mock.stop();
+  }
+});
+
 test('session-close exits 1 when summarize returns no text', async () => {
   const mock = startMockServer();
   try {
@@ -100,6 +113,25 @@ test('session-close refuses to crystallize when an action is not closed', async 
     }));
     const { exitCode, stderr } = await runBridge(['session-close', 's1', 'act-1', 'act-pending'], { AGENTMEMORY_URL: mock.url });
     expect(exitCode).toBe(1);
+    expect(stderr).toContain('done or cancelled');
+    expect(mock.requests.some((r) => r.path === '/agentmemory/crystals/create')).toBe(false);
+  } finally {
+    mock.stop();
+  }
+});
+
+test('session-close reports the summary was stored when an action blocks crystallization', async () => {
+  const mock = startMockServer();
+  try {
+    mock.routes.set('POST /agentmemory/summarize', { status: 200, body: { summary: 'session summary text' } });
+    mock.routes.set('POST /agentmemory/slot', { status: 200, body: { ok: true } });
+    mock.routes.set('GET /agentmemory/actions/get', (req) => ({
+      status: 200,
+      body: { actionId: req.query.actionId, status: 'pending' },
+    }));
+    const { exitCode, stderr } = await runBridge(['session-close', 's1', 'act-1'], { AGENTMEMORY_URL: mock.url });
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('summary stored');
     expect(stderr).toContain('done or cancelled');
     expect(mock.requests.some((r) => r.path === '/agentmemory/crystals/create')).toBe(false);
   } finally {

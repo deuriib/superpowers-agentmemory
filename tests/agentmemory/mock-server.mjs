@@ -3,7 +3,9 @@
 // and serves canned responses registered in `routes`. Tests never touch the
 // live server. Paths mirror the real server under /agentmemory/*.
 //
-// Route values: { status, body } | { status, raw } | (request) => { status, body }
+// Route values: { status, body } | { status, raw } | { hang: true } | (request) => { status, body }
+// { hang: true } never responds — simulates a server that accepts the connection
+// but stalls, for timeout tests.
 
 export function startMockServer() {
   const requests = [];
@@ -32,6 +34,9 @@ export function startMockServer() {
       requests.push(request);
 
       const route = routes.get(key);
+      if (route && route.hang === true) {
+        return new Promise(() => {});
+      }
       if (typeof route === 'function') {
         const canned = route(request);
         if (canned && canned.raw !== undefined) {

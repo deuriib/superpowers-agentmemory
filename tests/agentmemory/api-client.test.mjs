@@ -42,6 +42,24 @@ test('health exits 1 when the server is unreachable', async () => {
   expect(stderr).toContain('unreachable');
 });
 
+test('bridge fails fast with a timeout message when the server hangs', async () => {
+  const mock = startMockServer();
+  try {
+    mock.routes.set('GET /agentmemory/livez', { hang: true });
+    const { exitCode, stderr, timedOut } = await runBridge(
+      ['health'],
+      { AGENTMEMORY_URL: mock.url, AGENTMEMORY_TIMEOUT_MS: '200' },
+      undefined,
+      3000 // guard: without the timeout fix the bridge would hang forever
+    );
+    expect(timedOut).toBe(false);
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('timed out after 200ms');
+  } finally {
+    mock.stop();
+  }
+});
+
 test('apiRequest posts JSON body and sends the Bearer secret', async () => {
   const mock = startMockServer();
   try {

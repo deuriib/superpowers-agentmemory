@@ -6,15 +6,26 @@ import path from 'path';
 
 const BRIDGE = path.join(import.meta.dir, '..', '..', 'scripts', 'agentmemory-bridge.mjs');
 
-export async function runBridge(args, env = {}, cwd = undefined) {
+export async function runBridge(args, env = {}, cwd = undefined, timeoutMs = undefined) {
   const proc = Bun.spawn([process.execPath, BRIDGE, ...args], {
     env: { ...process.env, ...env },
     cwd,
     stdout: 'pipe',
     stderr: 'pipe',
   });
-  const exitCode = await proc.exited;
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  return { exitCode, stdout, stderr };
+  let timedOut = false;
+  const guard = timeoutMs
+    ? setTimeout(() => {
+        timedOut = true;
+        proc.kill();
+      }, timeoutMs)
+    : null;
+  try {
+    const exitCode = await proc.exited;
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    return { exitCode, stdout, stderr, timedOut };
+  } finally {
+    if (guard) clearTimeout(guard);
+  }
 }

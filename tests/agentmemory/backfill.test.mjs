@@ -97,3 +97,37 @@ test('backfill exits 1 when a remember fails', async () => {
     fs.rmSync(fixture, { recursive: true, force: true });
   }
 });
+
+// An ACL-denied .md file makes fs.readFileSync throw (EPERM on Windows).
+// The test returns early when the deny does not take effect (elevated shells
+// bypass ACLs) so it stays portable.
+test.skipIf(process.platform !== 'win32')('backfill counts an unreadable file as failed and continues', async () => {
+  const fixture = makeFixtureDir();
+  const specs = path.join(fixture, 'docs', 'superpowers', 'specs');
+  const denied = path.join(specs, 'denied.md');
+  fs.writeFileSync(denied, '# denied');
+  Bun.spawnSync(['icacls', denied, '/deny', 'Everyone:(R)'], { stdout: 'pipe', stderr: 'pipe' });
+  let denyEffective = false;
+  try {
+    fs.readFileSync(denied, 'utf8');
+  } catch {
+    denyEffective = true;
+  }
+  try {
+    if (!denyEffective) return; // elevated shell bypasses ACLs — nothing to assert
+    const mock = startMockServer();
+    try {
+      mock.routes.set('POST /agentmemory/remember', { status: 201, body: { id: 'm1' } });
+      const plans = path.join(fixture, 'docs', 'superpowers', 'plans');
+      const { exitCode, stdout } = await runBridge(['backfill', specs, plans], { AGENTMEMORY_URL: mock.url });
+      expect(exitCode).toBe(1); // failed >= 1 keeps the existing exit-code contract
+      expect(stdout).toContain('backfill: 3 indexed, 1 failed');
+      expect(mock.requests.filter((r) => r.path === '/agentmemory/remember')).toHaveLength(3);
+    } finally {
+      mock.stop();
+    }
+  } finally {
+    Bun.spawnSync(['icacls', denied, '/remove:d', 'Everyone'], { stdout: 'pipe', stderr: 'pipe' });
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
+});

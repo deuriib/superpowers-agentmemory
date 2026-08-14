@@ -38,6 +38,7 @@ Environment:
   AGENTMEMORY_SECRET    Bearer token sent when set
   AGENTMEMORY_AGENT_ID  Agent identity for leases (default superpowers-agent)
   AGENTMEMORY_PROJECT   Project name attached to writes
+  AGENTMEMORY_TIMEOUT_MS  Per-request timeout in ms (default 60000)
 `;
 }
 
@@ -84,6 +85,13 @@ export function extractSummaryText(json) {
   return null;
 }
 
+export const DEFAULT_TIMEOUT_MS = 60000;
+
+export function timeoutMs() {
+  const raw = Number(process.env.AGENTMEMORY_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TIMEOUT_MS;
+}
+
 export async function apiRequest(method, path, { query, body } = {}) {
   const url = new URL(baseUrl() + path);
   if (query) {
@@ -95,11 +103,20 @@ export async function apiRequest(method, path, { query, body } = {}) {
   if (process.env.AGENTMEMORY_SECRET) {
     headers.Authorization = `Bearer ${process.env.AGENTMEMORY_SECRET}`;
   }
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs()),
+    });
+  } catch (err) {
+    if (err && err.name === 'TimeoutError') {
+      throw new Error(`fetch timed out after ${timeoutMs()}ms (${method} ${url.pathname}${url.search})`);
+    }
+    throw err;
+  }
   let json = null;
   try {
     json = await response.json();
@@ -166,7 +183,14 @@ export async function cmdBackfill(...dirs) {
       continue;
     }
     for (const file of files) {
-      const content = fs.readFileSync(file, 'utf8');
+      let content;
+      try {
+        content = fs.readFileSync(file, 'utf8');
+      } catch (err) {
+        console.error(`backfill: cannot read ${file}: ${err.message}`);
+        failed += 1;
+        continue;
+      }
       const relPath = path.relative(process.cwd(), file).split(path.sep).join('/');
       const isSpec = relPath.includes('/specs/');
       const body = {
@@ -314,6 +338,17 @@ export async function cmdTaskClaim(actionId) {
   });
   if (!update.ok) {
     console.error(`task-claim: actions/update failed (${update.status}): ${JSON.stringify(update.json)}`);
+    // Best-effort release: the lease is held for DEFAULT_TTL_MS and would block
+    // other agents if left behind. A failing release is logged but must not
+    // mask the original error.
+    try {
+      const release = await apiRequest('POST', '/leases/release', { body: { actionId, agentId: agent } });
+      if (!release.ok) {
+        console.error(`task-claim: best-effort lease release failed (${release.status}): ${JSON.stringify(release.json)}`);
+      }
+    } catch (err) {
+      console.error(`task-claim: best-effort lease release failed: ${err.message}`);
+    }
     return 1;
   }
   console.log(`task-claim: ${actionId} claimed by ${agent} (lease ${DEFAULT_TTL_MS}ms)`);
@@ -359,12 +394,16 @@ export async function cmdSessionClose(sessionId, ...actionIds) {
 
   const summary = await apiRequest('POST', '/summarize', { body: { sessionId } });
   if (!summary.ok) {
-    console.error(`session-close: summarize failed (${summary.status}) — the server needs an LLM provider key; no summary stored`);
+    const errorText = summary.json && typeof summary.json.error === 'string' ? summary.json.error : '';
+    const llmHint = /llm|provider/i.test(errorText) ? ' — the server needs an LLM provider key' : '';
+    const bodyText = summary.json === null ? '' : ` ${JSON.stringify(summary.json)}`;
+    console.error(`session-close: summarize failed (${summary.status})${bodyText}${llmHint}; no summary stored`);
     return 1;
   }
   const summaryText = extractSummaryText(summary.json);
   if (!summaryText) {
-    console.error(`session-close: summarize returned no summary text: ${JSON.stringify(summary.json)}`);
+    const bodyText = summary.json === null ? '' : `: ${JSON.stringify(summary.json)}`;
+    console.error(`session-close: summarize returned no summary text${bodyText}`);
     return 1;
   }
 
@@ -401,6 +440,7 @@ export async function cmdSessionClose(sessionId, ...actionIds) {
         return 1;
       }
     } else {
+      console.error(`session-close: summary stored for ${sessionId}, but crystals/create skipped — some actions are not done or cancelled`);
       return 1;
     }
   }
