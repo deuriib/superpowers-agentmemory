@@ -179,6 +179,8 @@ tasks into the memory action DAG:
 bun scripts/agentmemory-bridge.mjs plan-sync docs/superpowers/plans/<plan-file>.md
 ```
 
-The bridge prints a JSON map of task numbers to action IDs. The plan file on
-disk stays the source of truth; the DAG is a retrievable mirror. Skip this
-step when the server is unreachable — the workflow does not depend on it.
+The bridge prints a JSON object whose `actions` array maps each task number to
+its `actionId` (e.g. `{task: 1, actionId: 'act-1'}`), plus an `edges` array. The
+plan file on disk stays the source of truth; the DAG is a retrievable mirror.
+Skip this step when the server is unreachable — the workflow does not depend on
+it.

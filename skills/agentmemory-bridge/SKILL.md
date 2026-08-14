@@ -10,6 +10,12 @@ through the zero-dependency CLI `scripts/agentmemory-bridge.mjs`. The server
 indexes what the workflow produces; the deterministic contract (skills, specs,
 plans, CLAUDE.md/AGENTS.md in git) never moves into memory.
 
+Quick start:
+
+```bash
+bun scripts/agentmemory-bridge.mjs health
+```
+
 ## Subcommands
 
 | Subcommand | Purpose | Endpoints |
@@ -43,4 +49,4 @@ plans, CLAUDE.md/AGENTS.md in git) never moves into memory.
 - Server unreachable: every subcommand fails fast with exit 1; the workflow continues without memory (golden rule).
 - Slots disabled (`AGENTMEMORY_SLOTS` off → 503): `session-close` falls back to `POST /agentmemory/remember` with `concepts: ["slot:session-summary"]`.
 - `crystals/create` requires every action `done`/`cancelled` and an LLM provider on the server; the bridge checks statuses first and reports the requirement.
-- `plan-sync` is create-only: re-running duplicates actions. The plan file is the contract; reconcile the DAG at close.
+- `plan-sync` is create-only: re-running duplicates actions. Run `plan-sync` only on a fresh plan; delete stale actions via the server API at close.
