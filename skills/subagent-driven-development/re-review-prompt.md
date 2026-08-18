@@ -19,7 +19,7 @@ Subagent (general-purpose):
 
     ## The Task
 
-    Read the task brief (signal from controller): [BRIEF_FILE]
+    Read the task brief (signal from controller): [BRIEF_SIGNAL]
 
     ## The Findings Under Verification
 
@@ -103,7 +103,7 @@ Subagent (general-purpose):
 **Placeholders:**
 - `[MODEL]` — REQUIRED: reviewer model per SKILL.md Model Selection; scoped
   re-reviews of small fix diffs take a cheap-to-mid tier
-- `[BRIEF_FILE]` — the task brief (received as a signal from the controller)
+- `[BRIEF_SIGNAL]` — the task brief (received as a signal from the controller)
 - `[FINDINGS]` — the Critical/Important findings and spec gaps from the
   previous review, copied verbatim, one per bullet
 - `[REPORT_FILE]` — the implementer's report file (fix reports appended)

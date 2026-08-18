@@ -20,7 +20,7 @@ Subagent (general-purpose):
 
     ## What Was Requested
 
-    Read the task brief: [BRIEF_FILE]
+    Read the task brief (signal from controller): [BRIEF_SIGNAL]
 
     Global constraints from the spec/design that bind this task:
     [GLOBAL_CONSTRAINTS]
@@ -189,7 +189,7 @@ Subagent (general-purpose):
 
 **Placeholders:**
 - `[MODEL]` — REQUIRED: reviewer model per SKILL.md Model Selection
-- `[BRIEF_FILE]` — REQUIRED: the task brief (received as a signal from the controller)
+- `[BRIEF_SIGNAL]` — REQUIRED: the task brief (received as a signal from the controller)
 - `[GLOBAL_CONSTRAINTS]` — the binding requirements copied verbatim from
   the plan's Global Constraints section or the spec: exact values, formats,
   and stated relationships between components (not process rules — those

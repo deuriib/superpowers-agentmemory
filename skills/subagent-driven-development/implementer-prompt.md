@@ -12,7 +12,7 @@ Subagent (general-purpose):
 
     ## Task Description
 
-    Read your task brief (signal from controller): [BRIEF_FILE]
+    Read your task brief (signal from controller): [BRIEF_SIGNAL]
     It contains the full task text from the plan.
 
     ## Context
