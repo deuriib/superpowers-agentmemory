@@ -28,7 +28,7 @@ Subagent (general-purpose):
     ## The Fix
 
     Read the implementer's report (fix reports are appended at the end):
-    [REPORT_FILE]
+    [REPORT_SIGNAL]
 
     **Fix base:** [FIX_BASE_SHA] (the head the previous review saw)
     **Head:** [HEAD_SHA]
@@ -106,7 +106,7 @@ Subagent (general-purpose):
 - `[BRIEF_SIGNAL]` — the task brief (received as a signal from the controller)
 - `[FINDINGS]` — the Critical/Important findings and spec gaps from the
   previous review, copied verbatim, one per bullet
-- `[REPORT_FILE]` — the implementer's report file (fix reports appended)
+- `[REPORT_SIGNAL]` — the implementer's report (fix reports appended, received as a signal)
 - `[FIX_BASE_SHA]` — the head the previous review saw
 - `[HEAD_SHA]` — current commit
 - `[DIFF_FILE]` — the path `scripts/review-package <plan-id> FIX_BASE HEAD` printed

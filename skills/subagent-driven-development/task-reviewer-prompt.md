@@ -27,7 +27,7 @@ Subagent (general-purpose):
 
     ## What the Implementer Claims They Built
 
-    Read the implementer's report: [REPORT_FILE]
+    Read the implementer's report (signal from controller): [REPORT_SIGNAL]
 
     ## Diff Under Review
 
@@ -194,7 +194,7 @@ Subagent (general-purpose):
   the plan's Global Constraints section or the spec: exact values, formats,
   and stated relationships between components (not process rules — those
   are already in this template)
-- `[REPORT_FILE]` — REQUIRED: the file the implementer wrote its detailed
+- `[REPORT_SIGNAL]` — REQUIRED: the implementer's report (received as a signal from the controller)
   report to
 - `[BASE_SHA]` — commit before this task
 - `[HEAD_SHA]` — current commit

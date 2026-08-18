@@ -127,7 +127,7 @@ Subagent (general-purpose):
 
     ## Report Format
 
-    Write your full report to [REPORT_FILE]:
+    Write your full report to [REPORT_SIGNAL]:
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
     - **TDD Evidence** (if TDD was required for this task):
