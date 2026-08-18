@@ -110,6 +110,16 @@ ${toolMapping}
       if (!config.skills.paths.includes(superpowersSkillsDir)) {
         config.skills.paths.push(superpowersSkillsDir);
       }
+
+      // Inject agentmemory MCP server
+      config.mcp = config.mcp || {};
+      if (!config.mcp['agentmemory']) {
+        config.mcp['agentmemory'] = {
+          type: 'local',
+          command: ['bun', 'x', '-y', '@agentmemory/mcp'],
+          enabled: true,
+        };
+      }
     },
 
     // Inject bootstrap into the first user message of each session.
