@@ -33,7 +33,7 @@ Subagent (general-purpose):
 
     **Base:** [BASE_SHA]
     **Head:** [HEAD_SHA]
-    **Diff file:** [DIFF_FILE]
+    **Diff file:** [DIFF_SIGNAL]
 
     Read the diff file once — it contains the commit list, a stat summary,
     and the full diff with surrounding context, and it is your view of the
@@ -198,7 +198,7 @@ Subagent (general-purpose):
   report to
 - `[BASE_SHA]` — commit before this task
 - `[HEAD_SHA]` — current commit
-- `[DIFF_FILE]` — REQUIRED: the path the controller wrote the review
+- `[DIFF_SIGNAL]` — REQUIRED: the review package (received as a signal from the controller)
   package to (`scripts/review-package <plan-id> BASE HEAD` prints the unique
   path it wrote; the package never enters the controller's context)
 

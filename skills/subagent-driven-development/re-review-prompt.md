@@ -32,7 +32,7 @@ Subagent (general-purpose):
 
     **Fix base:** [FIX_BASE_SHA] (the head the previous review saw)
     **Head:** [HEAD_SHA]
-    **Diff file:** [DIFF_FILE]
+    **Diff file:** [DIFF_SIGNAL]
 
     Read the diff file once — it contains the fix commits, a stat summary,
     and the fix diff with surrounding context. Do not re-run git commands.
@@ -109,7 +109,7 @@ Subagent (general-purpose):
 - `[REPORT_SIGNAL]` — the implementer's report (fix reports appended, received as a signal)
 - `[FIX_BASE_SHA]` — the head the previous review saw
 - `[HEAD_SHA]` — current commit
-- `[DIFF_FILE]` — the path `scripts/review-package <plan-id> FIX_BASE HEAD` printed
+- `[DIFF_SIGNAL]` — the review package (received as a signal from the controller)
 
 **Re-reviewer returns:** per-finding verdicts (ADDRESSED / NOT ADDRESSED),
 new breakage in the fix diff, out-of-scope observations, and a round verdict.
