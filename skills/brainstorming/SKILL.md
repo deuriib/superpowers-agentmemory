@@ -78,35 +78,39 @@ Classify first, announce the path, then create a task for each item on
 your path and complete them in order.
 
 **Spike:**
-1. **Explore project context** — enough to frame the probe
-2. **Present question + probe plan** — 2-3 sentences
-3. **Get approval** — a nod is enough
-4. **Investigate** — as cheaply as correctness allows
-5. **Report findings** — a recommendation; label anything built as throwaway
+1. **Recall from agentmemory** — `smart_search` + `lesson_recall` on the topic (core queries only)
+2. **Explore project context** — enough to frame the probe
+3. **Present question + probe plan** — 2-3 sentences; reference any relevant past decisions or lessons found
+4. **Get approval** — a nod is enough
+5. **Investigate** — as cheaply as correctness allows
+6. **Report findings** — a recommendation; label anything built as throwaway
 
 **Bounded:**
-1. **Explore project context** — check files, docs, recent commits
-2. **Ask clarifying questions** — one at a time, the ones that matter
-3. **Present short design in chat** — approach, files touched, testing
-4. **Get approval** — STOP and wait for an explicit yes; presenting the design and starting in the same breath is skipping the gate
-5. **Implement** — proceed with the normal development workflow (TDD applies); no plan document
+1. **Recall from agentmemory** — `smart_search` + `lesson_recall` on the topic; `file_history` on files likely to be affected
+2. **Explore project context** — check files, docs, recent commits
+3. **Ask clarifying questions** — one at a time, the ones that matter; reference past decisions/lessons from memory
+4. **Present short design in chat** — approach, files touched, testing
+5. **Get approval** — STOP and wait for an explicit yes; presenting the design and starting in the same breath is skipping the gate
+6. **Implement** — proceed with the normal development workflow (TDD applies); no plan document
 
 **Architectural:**
-1. **Explore project context** — check files, docs, recent commits
-2. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
-3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+1. **Recall from agentmemory** — full protocol: `smart_search` + `lesson_recall` + `profile` + `sessions` + `patterns` + `graph_query` on the domain
+2. **Explore project context** — check files, docs, recent commits
+3. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
+4. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria; surface relevant memory findings as conversation starters
+5. **Propose 2-3 approaches** — with trade-offs and your recommendation; follow established patterns found in memory
+6. **Present design** — in sections scaled to their complexity, get user approval after each section
+7. **Save design to slot** — `slot_create` with label `spec_<topic_slug>`, content is the full design text, pinned: true
+8. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+9. **User reviews saved spec** — ask user to review the saved design before proceeding
+10. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
 ```dot
 digraph brainstorming {
     "Classify: spike / bounded / architectural" [shape=diamond];
+    "Recall from agentmemory" [shape=box];
     "Present question + probe (2-3 sentences)" [shape=box];
     "Ask clarifying questions (bounded)" [shape=box];
     "Present short design in chat" [shape=box];
@@ -118,15 +122,16 @@ digraph brainstorming {
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
+    "Save design to slot" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
     "User reviews spec?" [shape=diamond];
     "Invoke writing-plans skill" [shape=doublecircle];
     "Hidden complexity? Upgrade path" [shape=box];
 
-    "Classify: spike / bounded / architectural" -> "Present question + probe (2-3 sentences)" [label="spike"];
-    "Classify: spike / bounded / architectural" -> "Ask clarifying questions (bounded)" [label="bounded"];
-    "Classify: spike / bounded / architectural" -> "Explore project context" [label="architectural"];
+    "Classify: spike / bounded / architectural" -> "Recall from agentmemory";
+    "Recall from agentmemory" -> "Present question + probe (2-3 sentences)" [label="spike"];
+    "Recall from agentmemory" -> "Ask clarifying questions (bounded)" [label="bounded"];
+    "Recall from agentmemory" -> "Explore project context" [label="architectural"];
     "Present question + probe (2-3 sentences)" -> "Human approves?";
     "Ask clarifying questions (bounded)" -> "Present short design in chat";
     "Present short design in chat" -> "Human approves?";
@@ -138,10 +143,10 @@ digraph brainstorming {
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec self-review\n(fix inline)";
+    "User approves design?" -> "Save design to slot" [label="yes"];
+    "Save design to slot" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
+    "User reviews spec?" -> "Save design to slot" [label="changes requested"];
     "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
 }
 ```
@@ -163,13 +168,40 @@ is the whole process.
 
 **Understanding the idea:**
 
-- Check out the current project state first (files, docs, recent commits)
+- **Recall from agentmemory first** — before touching files, query memory for context that isn't in the codebase (see Recall Protocol below)
+- Check out the current project state (files, docs, recent commits)
 - Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
 - If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec → plan → implementation cycle.
 - For appropriately-scoped projects, ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple questions
 - Focus on understanding: purpose, constraints, success criteria
+
+**Recall Protocol (agentmemory):**
+
+Every brainstorming session starts by querying memory. This takes seconds and prevents re-discovering what's already known. Skip only if the server is down (503).
+
+Core queries — run these for every path:
+
+1. **`memory_smart_search`** with the core concept or topic. Surfaces past decisions, errors, and related work across all sessions.
+2. **`memory_lesson_recall`** with the topic. Catches "we tried this before and learned..." — lessons that apply directly to the current idea.
+
+Path-specific queries — add these based on classification:
+
+| Path | Additional queries |
+|------|-------------------|
+| **Spike** | Core queries only (fastest path) |
+| **Bounded** | + `memory_file_history` on files likely to be affected |
+| **Architectural** | + `memory_profile` for the project, `memory_sessions` for recent activity, `memory_patterns` for recurring themes, `memory_graph_query` to explore domain relationships |
+
+How to use the results:
+
+- **Decisions found** → reference them in clarifying questions ("We decided X before — does that still hold?")
+- **Lessons found** → surface them as constraints ("Last time we learned Y, so I'll avoid that pattern")
+- **Past work found** → check if it's reusable or conflicts with the new idea
+- **Patterns found** → follow established conventions instead of proposing new ones
+
+If smart_search returns nothing relevant, proceed without forcing connections — not everything has prior context.
 
 **Exploring approaches:**
 
@@ -203,13 +235,14 @@ is the whole process.
 
 **Documentation:**
 
-- Write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
-  - (User preferences for spec location override this default)
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Save the validated design (spec) to a slot via `slot_create`
+  - `label`: `spec_<topic_slug>` (e.g., `spec_auth_oauth2`)
+  - `content`: the full design text
+  - `pinned: true` (excluded from context injection but always accessible)
+- The slot label becomes the reference for writing-plans: `Spec: slot spec_<topic_slug>`
 
 **Spec Self-Review:**
-After writing the spec document, look at it with fresh eyes:
+After saving the design to the slot, review it with fresh eyes:
 
 1. **Placeholder scan:** Any "TBD", "TODO", incomplete sections, or vague requirements? Fix them.
 2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
@@ -219,9 +252,9 @@ After writing the spec document, look at it with fresh eyes:
 Fix any issues inline. No need to re-review — just fix and move on.
 
 **User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
+After the spec review loop passes, ask the user to review the saved spec before proceeding:
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec saved to slot `spec_<topic_slug>`. Please review and let me know if you want to make any changes before we start writing out the implementation plan."
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
