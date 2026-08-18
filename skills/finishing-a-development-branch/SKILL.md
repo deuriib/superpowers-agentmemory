@@ -200,6 +200,44 @@ Carry out the choice, then remove the worktree.
 **Otherwise:** The host environment owns this workspace — leave it in
 place. If your platform provides a workspace-exit tool, use it.
 
+## Step 7: Close the Plan in agentmemory
+
+After cleanup, close the plan in the agentmemory DAG. This preserves the
+development cycle as a crystal and snapshot for future reference.
+
+**1. Crystallize the completed actions:**
+```
+crystallize
+  actionIds: <comma-separated action IDs of completed plan tasks>
+  project: <project name>
+```
+
+**2. Create a snapshot:**
+```
+snapshot_create
+  message: "Completed: <feature name>. Tasks: <N>. Branch: <branch>."
+```
+
+**3. Create a closure slot:**
+```
+slot_create
+  label: "{plan_id}_closure"
+  content: |
+    Plan: <name>
+    Completed: <date>
+    Branch: <branch>
+    Commits: <commit range>
+    Summary: <what was built>
+    Decisions: <key rulings made>
+    Lessons: <what was learned>
+  pinned: true
+```
+
+**4. Clean up ephemeral diff packages:**
+```bash
+rm -rf .superpowers/sdd/<plan-basename>/review-*.diff
+```
+
 ## Quick Reference
 
 | Option | Merge | Push | Keep Worktree | Cleanup Branch |

@@ -29,7 +29,16 @@ BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-**2. Dispatch code reviewer subagent:**
+**2. Create a review checkpoint (agentmemory):**
+```
+checkpoint_create
+  name: "Review: Task N"
+  type: approval
+  linkedActionIds: <task action ID>
+```
+This gates the task until the review passes.
+
+**3. Dispatch code reviewer subagent:**
 
 Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md](code-reviewer.md)
 
@@ -39,11 +48,13 @@ Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md
 - `{BASE_SHA}` - Starting commit
 - `{HEAD_SHA}` - Ending commit
 
-**3. Act on feedback:**
+**4. Act on feedback and resolve checkpoint:**
 - Fix Critical issues immediately
 - Fix Important issues before proceeding
 - Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
+- After fixing: `checkpoint_resolve status=passed` (or `failed` if unresolved)
+- Store findings as observations: `memory_save` with concepts and files
 
 ## Example
 

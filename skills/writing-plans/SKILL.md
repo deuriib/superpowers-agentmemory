@@ -15,8 +15,71 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** If working in an isolated worktree, it should have been created via the `superpowers:using-git-worktrees` skill at execution time.
 
-**Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
-- (User preferences for plan location override this default)
+## Plan Storage — agentmemory DAG
+
+Plans live in the agentmemory action DAG, not in .md files. The DAG is the single source of truth for plan state.
+
+### Creating a plan
+
+1. **Create the plan root action:**
+   ```
+   action_create
+     title: "[Feature Name] Implementation Plan"
+     description: |
+       Goal: [One sentence]
+       Architecture: [2-3 sentences]
+       Tech Stack: [Key technologies]
+       Spec: [slot or reference to the spec]
+
+       Global Constraints:
+       [Project-wide requirements — one line each]
+     parentId: (none — this is the root)
+     priority: 10
+     tags: plan, agentmemory
+   ```
+
+2. **Create one action per task:**
+   ```
+   action_create
+     title: "Task N: [Component Name]"
+     description: |
+       Files:
+       - Create: path/to/file.py
+       - Modify: path/to/existing.py:123-145
+       - Test: tests/path/test.py
+
+       Interfaces:
+       - Consumes: [what this task uses from earlier tasks]
+       - Produces: [what later tasks rely on]
+
+       Steps:
+       1. Write the failing test
+       2. Run test to verify it fails
+       3. Write minimal implementation
+       4. Run test to verify it passes
+       5. Commit
+     parentId: <plan root action ID>
+     requires: <action IDs of tasks this depends on>
+     priority: <1-10>
+     tags: task, plan:<plan_id>
+   ```
+
+3. **Tag all actions** with `facet_tag` dimension "plan", value "{plan_id}" for querying.
+
+4. **Create the context slot:**
+   ```
+   slot_create
+     label: "{plan_id}_context"
+     content: "Plan: <name>\nPlan ID: <action ID>\nSpec slot: <slot>\nTasks: <list with IDs>"
+     pinned: true
+   ```
+
+### What changes vs. the old .md approach
+
+- **No .md files generated.** The DAG is the plan.
+- **frontier** replaces file scanning: `frontier project=<name>` returns unblocked tasks.
+- **Briefs via signals:** the controller reads the action description and sends it via `signal_send` to the implementer.
+- **Ledger replaced by DAG:** `action_update done` = task complete. No `progress.md`.
 
 ## Scope Check
 
@@ -53,80 +116,46 @@ independently testable deliverable.
 
 ## Plan Document Header
 
-**Every plan MUST start with this header:**
+**Every plan root action MUST include this in its description:**
 
-```markdown
-# [Feature Name] Implementation Plan
+```
+Goal: [One sentence describing what this builds]
+Architecture: [2-3 sentences about approach]
+Tech Stack: [Key technologies/libraries]
+Spec: [slot reference — e.g. slot agentmemory_source_of_truth_spec]
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
-**Goal:** [One sentence describing what this builds]
-
-**Architecture:** [2-3 sentences about approach]
-
-**Tech Stack:** [Key technologies/libraries]
-
-**Spec:** [path to the spec/design doc this plan implements — the plan
-argues from the spec, so the spec travels with it; executors read both]
-
-## Global Constraints
-
-[The spec's project-wide requirements — version floors, dependency limits,
-naming and copy rules, platform requirements — one line each, with exact
-values copied verbatim from the spec. Every task's requirements implicitly
-include this section.]
-
----
+Global Constraints:
+- [Project-wide requirement 1 — exact value]
+- [Project-wide requirement 2 — exact value]
 ```
 
 ## Task Structure
 
-````markdown
-### Task N: [Component Name]
+Each task is an action in the DAG. The description contains the full task text:
 
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
-
-**Interfaces:**
-- Consumes: [what this task uses from earlier tasks — exact signatures]
-- Produces: [what later tasks rely on — exact function names, parameter
-  and return types. A task's implementer sees only their own task; this
-  block is how they learn the names and types neighboring tasks use.]
-
-- [ ] **Step 1: Write the failing test**
-
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
 ```
+Title: "Task N: [Component Name]"
 
-- [ ] **Step 2: Run test to verify it fails**
+Description:
+  Files:
+  - Create: exact/path/to/file.py
+  - Modify: exact/path/to/existing.py:123-145
+  - Test: tests/exact/path/to/test.py
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
+  Interfaces:
+  - Consumes: [what this task uses from earlier tasks — exact signatures]
+  - Produces: [what later tasks rely on — exact function names, types]
 
-- [ ] **Step 3: Write minimal implementation**
+  Steps:
+  1. Write the failing test [actual test code]
+  2. Run test to verify it fails [command + expected output]
+  3. Write minimal implementation [actual code]
+  4. Run test to verify it passes [command + expected output]
+  5. Commit [git add + commit command]
 
-```python
-def function(input):
-    return expected
+  parentId: <plan root action ID>
+  requires: <comma-separated action IDs this depends on>
 ```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
-````
 
 ## No Placeholders
 
@@ -152,35 +181,21 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+After creating the plan in the DAG, offer execution choice:
 
-**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Two execution options:**
+**"Plan complete and registered in agentmemory DAG. Task 1 is unblocked (`frontier` confirms). Two execution options:**
 
-**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
+**1. Subagent-Driven (recommended)** - Dispatch a fresh subagent per task via `signal_send`, review between tasks, fast iteration
 
-**2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
+**2. Inline Execution** - Execute tasks in this session, updating the DAG as you go
 
 **Which approach?"**
 
 **If Subagent-Driven chosen:**
 - **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
 - Fresh subagent per task + two-stage review
+- Briefs sent via `signal_send`, not file-based
 
 **If Inline Execution chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:executing-plans
-- Batch execution with checkpoints for review
-
-## Optional: agentmemory bridge (fork-local)
-
-This fork pairs with the agentmemory bridge. After saving the plan, sync its
-tasks into the memory action DAG:
-
-```bash
-bun scripts/agentmemory-bridge.mjs plan-sync docs/superpowers/plans/<plan-file>.md
-```
-
-The bridge prints a JSON object whose `actions` array maps each task number to
-its `actionId` (e.g. `{task: 1, actionId: 'act-1'}`), plus an `edges` array. The
-plan file on disk stays the source of truth; the DAG is a retrievable mirror.
-Skip this step when the server is unreachable — the workflow does not depend on
-it.
+- Execute directly from the DAG
+- Use `frontier` to find unblocked tasks, `lease` to claim, `action_update` to mark done
