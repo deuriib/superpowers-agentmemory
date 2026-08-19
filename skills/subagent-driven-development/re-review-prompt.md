@@ -27,18 +27,15 @@ Subagent (general-purpose):
 
     ## The Fix
 
-    Read the implementer's report (fix reports are appended at the end):
-    [REPORT_SIGNAL]
+    Read the implementer's report (observation from controller):
+    [REPORT_OBSERVATION_ID]
+    Use `memory_recall` with the observation ID to retrieve the full report.
+    Fix reports are appended as observations — read the latest fix report
+    observation for this task.
 
-    **Fix base:** [FIX_BASE_SHA] (the head the previous review saw)
-    **Head:** [HEAD_SHA]
-    **Diff file:** [DIFF_FILE]
-
-    Read the diff file once — it contains the fix commits, a stat summary,
-    and the fix diff with surrounding context. Do not re-run git commands.
-    If the diff file is missing, fetch the diff yourself:
-    `git diff --stat [FIX_BASE_SHA]..[HEAD_SHA]` and
-    `git diff [FIX_BASE_SHA]..[HEAD_SHA]`.
+    **Fix diff observation:** [FIX_DIFF_OBSERVATION_ID]
+    Use `memory_recall` with the observation ID to retrieve the fix diff
+    package (fix commits, stat summary, and fix diff with context).
 
     Your review is read-only on this checkout. Do not mutate the working
     tree, the index, HEAD, or branch state in any way.
@@ -63,13 +60,13 @@ Subagent (general-purpose):
 
     ## Tests
 
-    The implementer re-ran the tests covering the amended code and appended
-    the results to the report file. Treat the report as unverified claims:
-    confirm the fix report names the covering tests and shows their output,
-    and verify the claims against the diff. Do not re-run the suite to
-    confirm their report. Run a test only when reading the code raises a
-    specific doubt that no existing run answers — and then a focused test,
-    never a package-wide suite.
+    The implementer re-ran the tests covering the amended code and saved
+    the results as a fix report observation. Treat the observation as
+    unverified claims: confirm the fix report names the covering tests and
+    shows their output, and verify the claims against the diff. Do not
+    re-run the suite to confirm their report. Run a test only when reading
+    the code raises a specific doubt that no existing run answers — and
+    then a focused test, never a package-wide suite.
 
     ## Output Format
 
@@ -106,10 +103,10 @@ Subagent (general-purpose):
 - `[BRIEF_SIGNAL]` — the task brief (received as a signal from the controller)
 - `[FINDINGS]` — the Critical/Important findings and spec gaps from the
   previous review, copied verbatim, one per bullet
-- `[REPORT_SIGNAL]` — the implementer's report (fix reports appended, received as a signal)
-- `[FIX_BASE_SHA]` — the head the previous review saw
-- `[HEAD_SHA]` — current commit
-- `[DIFF_FILE]` — the review package (path printed by `scripts/review-package`)
+- `[REPORT_OBSERVATION_ID]` — the implementer's report observation ID
+  (fix reports appended as observations, received via signal)
+- `[FIX_DIFF_OBSERVATION_ID]` — the fix diff observation ID
+  (received via signal from the controller; read via `memory_recall`)
 
 **Re-reviewer returns:** per-finding verdicts (ADDRESSED / NOT ADDRESSED),
 new breakage in the fix diff, out-of-scope observations, and a round verdict.

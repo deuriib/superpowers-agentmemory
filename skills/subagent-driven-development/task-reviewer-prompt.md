@@ -27,27 +27,24 @@ Subagent (general-purpose):
 
     ## What the Implementer Claims They Built
 
-    Read the implementer's report (signal from controller): [REPORT_SIGNAL]
+    Read the implementer's report (observation from controller):
+    [REPORT_OBSERVATION_ID]
+    Use `memory_recall` with the observation ID to retrieve the full report.
 
     ## Diff Under Review
 
-    **Base:** [BASE_SHA]
-    **Head:** [HEAD_SHA]
-    **Diff file:** [DIFF_FILE]
-
-    Read the diff file once — it contains the commit list, a stat summary,
-    and the full diff with surrounding context, and it is your view of the
-    change. The diff's context lines ARE the changed files: do not Read a
-    changed file separately unless a hunk you must judge is cut off
-    mid-function — and say so in your report. Do not re-run git commands.
-    If the diff file is missing, fetch the diff yourself:
-    `git diff --stat [BASE_SHA]..[HEAD_SHA]` and `git diff [BASE_SHA]..[HEAD_SHA]`.
-    Do not crawl the broader codebase. Inspect code outside the diff only
-    to evaluate a concrete risk you can name — one focused check per named
-    risk, and name both the risk and what you checked in your report.
-    Cross-cutting changes are legitimate named risks: if the diff changes
-    lock ordering, a function or API contract, or shared mutable state,
-    checking the call sites is the right method.
+    **Review package observation:** [DIFF_OBSERVATION_ID]
+    Use `memory_recall` with the observation ID to retrieve the full diff
+    package (commit list, stat summary, and the full diff with context).
+    This is your view of the change. The diff's context lines ARE the
+    changed files: do not Read a changed file separately unless a hunk you
+    must judge is cut off mid-function — and say so in your report. Do not
+    re-run git commands. Inspect code outside the diff only to evaluate a
+    concrete risk you can name — one focused check per named risk, and name
+    both the risk and what you checked in your report. Cross-cutting
+    changes are legitimate named risks: if the diff changes lock ordering,
+    a function or API contract, or shared mutable state, checking the call
+    sites is the right method.
 
     Your review is read-only on this checkout. Do not mutate the working
     tree, the index, HEAD, or branch state in any way.
@@ -74,22 +71,23 @@ Subagent (general-purpose):
 
     The implementer already ran the tests and reported results with TDD
     evidence for exactly this code. Do not re-run the suite to confirm their
-    report. Run a test only when reading the code raises a specific doubt
-    that no existing run answers — and then a focused test, never a
-    package-wide suite, race detector run, or repeated/high-count loop. If
-    heavy validation seems warranted, recommend it in your report instead of
-    running it. If you cannot run commands in this environment, name the
-    test you would run.
+    report. The test evidence is in the report observation. Run a test only
+    when reading the code raises a specific doubt that no existing run
+    answers — and then a focused test, never a package-wide suite, race
+    detector run, or repeated/high-count loop. If heavy validation seems
+    warranted, recommend it in your report instead of running it. If you
+    cannot run commands in this environment, name the test you would run.
 
     Warnings or other noise in the implementer's reported test output are
     findings — test output should be pristine.
 
     Evidence you cannot see is not evidence that doesn't exist. If the
-    report or its test evidence looks truncated, or you cannot locate the
-    results it claims, re-read the file at its stated path — and if it is
-    genuinely missing or garbled, report that as a gap for the controller.
-    Re-running the suite to regenerate what you failed to read is not
-    verification; illegibility of the evidence is not invalidation of it.
+    report observation or its test evidence looks truncated, or you cannot
+    locate the results it claims, re-read the observation via
+    `memory_recall` — and if it is genuinely missing or garbled, report
+    that as a gap for the controller. Re-running the suite to regenerate
+    what you failed to read is not verification; illegibility of the
+    evidence is not invalidation of it.
 
     ## Part 1: Spec Compliance
 
@@ -194,13 +192,12 @@ Subagent (general-purpose):
   the plan's Global Constraints section or the spec: exact values, formats,
   and stated relationships between components (not process rules — those
   are already in this template)
-- `[REPORT_SIGNAL]` — REQUIRED: the implementer's report (received as a signal from the controller)
-  report to
-- `[BASE_SHA]` — commit before this task
-- `[HEAD_SHA]` — current commit
-- `[DIFF_FILE]` — REQUIRED: the review package (path printed by `scripts/review-package`)
-  package to (`scripts/review-package <plan-id> BASE HEAD` prints the unique
-  path it wrote; the package never enters the controller's context)
+- `[REPORT_OBSERVATION_ID]` — REQUIRED: the implementer's report
+  (observation ID received via signal from the controller; read via
+  `memory_recall`)
+- `[DIFF_OBSERVATION_ID]` — REQUIRED: the review package
+  (observation ID received via signal from the controller; read via
+  `memory_recall`)
 
 **Reviewer returns:** Spec Compliance verdict (✅/❌/⚠️), Strengths, Issues
 (Critical/Important/Minor), Task quality verdict

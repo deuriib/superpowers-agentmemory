@@ -83,14 +83,14 @@ digraph process {
         "Append completion to DAG, mark todo complete" [shape=box];
     }
 
-    "Setup: worktree, DAG check, read plan, pre-flight review" [shape=box];
+    "Setup: branch, DAG check, read plan, pre-flight review" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" [shape=box];
     "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals" [shape=box];
-    "Final review clean: delete this plan's workspace" [shape=box];
+    "Final review clean: record in DAG" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Setup: worktree, DAG check, read plan, pre-flight review" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Setup: branch, DAG check, read plan, pre-flight review" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer asks questions?";
     "Implementer asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Implementer implements, tests, commits, self-reviews";
@@ -116,17 +116,15 @@ digraph process {
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" [label="no"];
     "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" -> "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals";
-    "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals" -> "Final review clean: delete this plan's workspace";
-    "Final review clean: delete this plan's workspace" -> "Use superpowers:finishing-a-development-branch";
+    "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals" -> "Final review clean: record in DAG";
+    "Final review clean: record in DAG" -> "Use superpowers:finishing-a-development-branch";
 }
 ```
 
 ## Setup
 
-Ensure the work happens in an isolated workspace: use
-superpowers:using-git-worktrees to create one or verify the existing one.
-Never start implementation on a main/master branch without your human
-partner's explicit consent.
+Verify the work happens on the correct branch. Never start implementation
+on a main/master branch without your human partner's explicit consent.
 
 **The DAG is your DAG.** Conversation memory does not survive compaction,
 but agentmemory does. Track all progress in the agentmemory action DAG —
@@ -134,16 +132,19 @@ it survives compaction, is queryable, and is the single source of truth.
 
 - At skill start, read the plan from the DAG: `memory_frontier project=<name>`
   returns unblocked tasks. Each action's status (`pending`, `active`, `done`)
-  IS the DAG — no `progress.md` file needed.
+  IS the DAG — no progress file needed.
 - **Recovery after compaction:** query the DAG (`memory_frontier` or
   `memory_facet_query targetType=action matchAll=plan:<plan_id>`) to see what's
   done and what remains. Cross-reference with `git log` for commit SHA
   verification.
-- **Workspace** (`.superpowers/sdd/<plan>/`) is now ONLY for ephemeral
-  diff packages from `review-package`. No DAG, no briefs — those live
-  in the DAG and signals.
-- `git clean -fdx` will destroy the workspace (it's git-ignored scratch);
-  if that happens, recover from `git log` and the DAG.
+- **No files.** Briefs, reports, diffs, and rulings all live in
+  agentmemory (observations and signals). Nothing is written to disk
+  except git commits. If the session dies, recover from the DAG
+  (`memory_frontier`) and `git log`.
+- **No files.** Briefs, reports, diffs, and rulings all live in
+  agentmemory (observations and signals). Nothing is written to disk
+  except git commits. If the session dies, recover from the DAG
+  (`memory_frontier`) and `git log`.
 
 Read the plan from the DAG once — note its Global Constraints and task
 dependencies. If the plan references a Spec slot, read that too with
@@ -233,10 +234,11 @@ and fix-round diffs need it.
   tasks that the brief cannot know; (4) your resolution of any ambiguity
   you noticed; (5) the report contract. The signal IS the brief — never
   paste the task text into the dispatch prompt.
-- **Report file:** name the implementer's report file after the brief
-  (brief `…/task-N-brief.md` → report `…/task-N-report.md`) and put it in
-  the dispatch prompt. The implementer writes the full report there and
-  returns only status, commits, a one-line test summary, and concerns.
+- **Report contract:** the implementer saves its report as an observation
+  (`memory_save` with `type=observation`, `concepts=report,task-N,<plan_id>`)
+  and returns the observation ID in its signal. The reviewer receives this
+  ID via signal and reads the report with `memory_recall` or
+  `memory_smart_search`. No files are created.
 - A dispatch prompt describes one task, not the session's history. Do not
   paste accumulated prior-task summaries ("state after Tasks 1-3") into
   later dispatches — a real session's dispatch hit 42k chars of which 99%
@@ -260,7 +262,12 @@ Template: [implementer-prompt.md](implementer-prompt.md)
 
 Implementer subagents report one of four statuses. Handle each appropriately:
 
-**DONE:** Generate the review package (`scripts/review-package <plan-id> BASE HEAD`, from this skill's directory — it prints the unique file path it wrote; BASE is the commit you recorded before dispatching the implementer — never `HEAD~1`, which silently drops all but the last commit of a multi-commit task), then dispatch the task reviewer with the printed path.
+**DONE:** Save the review package as an observation: run
+`scripts/review-package <plan-id> BASE HEAD` (it prints the diff content to
+stdout), then `memory_save` the output as `type=observation`,
+`concepts=review-package,<plan_id>,task-N`. Send the observation ID to the
+task reviewer via `memory_signal_send` with `type=findings`, including the
+report observation ID and the review package observation ID.
 
 **DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before review. If they're observations (e.g., "this file is getting large"), note them and proceed to review.
 
@@ -286,18 +293,15 @@ report missing either verdict — spec compliance AND task quality are both
 required. Implementer self-review never replaces the task review; both are
 needed.
 
-- Hand the reviewer its diff as a file: run this skill's
-  `scripts/review-package <plan-id> BASE HEAD` and pass the reviewer the file path
-  it prints (or, without bash: `git log --oneline`, `git diff --stat`,
-  and `git diff -U10` for the range, redirected to one uniquely named
-  file). The output never enters your own context, and the reviewer sees
-  the commit list, stat summary, and full diff with context in one Read
-  call. Use the BASE you recorded before dispatching the implementer —
-  never `HEAD~1`, which silently truncates multi-commit tasks. Never
-  dispatch a task reviewer without a diff file.
-- **Reviewer inputs:** the task reviewer gets three paths — the same brief
-  file, the report file, and the review package — plus the global
-  constraints that bind the task.
+- **Reviewer receives everything via signal.** Send the reviewer a
+  `memory_signal_send` with `type=findings` containing: (1) the report
+  observation ID, (2) the review package observation ID, (3) the brief
+  signal ID, and (4) the global constraints. The reviewer reads the report
+  and diff via `memory_recall` or `memory_smart_search` using those IDs.
+  No file paths are passed.
+- **Reviewer inputs:** the task reviewer gets three observation/signal
+  references — the report, the review package, and the task brief — plus
+  the global constraints that bind the task.
 - The global-constraints block you hand the reviewer is its attention
   lens. Copy the binding requirements verbatim from the plan's Global
   Constraints section or the spec: exact values, exact formats, and the
@@ -346,34 +350,39 @@ Everything else enters the loop. A fix round is one fix dispatch plus one
 scoped re-review. Five rounds maximum per task:
 
 **Rounds 1-3 — resume the original implementer.** Send it the open findings
-verbatim. Its context is intact: it knows the task, the code, and its own
-choices. If your harness cannot send another message to a live subagent,
-dispatch a fresh implementer carrying the brief path, the report-file path,
-and the findings — the report file is the persistent memory either way.
+verbatim via `memory_signal_send` with `type=fix-instructions`. Its context
+is intact: it knows the task, the code, and its own choices. If your
+harness cannot send another message to a live subagent, dispatch a fresh
+implementer carrying the brief signal ID, the report observation ID,
+and the findings — the report observation is the persistent memory either
+way.
 
 **Rounds 4-5 — dispatch a fresh implementer on a more capable model** (per
-Model Selection), with the brief path, the report-file path, the open
-findings, and this framing: "A prior implementer attempted this task
-[N] times; you own it now. Read the report file for what was tried." A loop
-that survives three resumes usually means the implementer cannot see its
-own problem — fresh eyes and a capability bump in one move.
+Model Selection), with the brief signal ID, the report observation ID,
+the open findings, and this framing: "A prior implementer attempted this
+task [N] times; you own it now. Read the report observation for what was
+tried." A loop that survives three resumes usually means the implementer
+cannot see its own problem — fresh eyes and a capability bump in one move.
 
 **Every round, either way:** the implementer fixes, re-runs the tests
-covering the amended code, appends its fix report to the same report file,
-and returns the short contract. Before re-dispatching the reviewer, confirm
-the fix report contains the covering tests, the command run, and the
-output; dispatch the re-review once all three are present. Name the
-covering test files in the fix message — a one-line fix does not need the
-whole suite.
+covering the amended code, saves a fix report as an observation
+(`memory_save` with `type=observation`, `concepts=fix-report,task-N,round-R`),
+and returns the observation ID in its signal. Before re-dispatching the
+reviewer, confirm the fix report observation contains the covering tests,
+the command run, and the output; dispatch the re-review once all three
+are present. Name the covering test files in the fix message — a one-line
+fix does not need the whole suite.
 
-**The re-review is scoped.** Run `scripts/review-package <plan-id> FIX_BASE HEAD`
-where FIX_BASE is the head the previous review saw, and dispatch
-[re-review-prompt.md](re-review-prompt.md) with the findings list, the
-brief, the report file, and the printed diff path. The re-reviewer verdicts
-each finding ADDRESSED or NOT ADDRESSED and flags new breakage in the fix
-diff only. New Critical/Important breakage in the fix diff joins the open
-findings list. Out-of-scope observations go to the DAG as deferred
-minors — they never extend the loop.
+**The re-review is scoped.** Save the fix diff as an observation
+(`memory_save` with `type=observation`, `concepts=fix-diff,task-N,round-R`),
+then dispatch [re-review-prompt.md](re-review-prompt.md) via signal with
+the findings list, the brief signal ID, the report observation ID, the
+fix report observation ID, and the fix diff observation ID. The
+re-reviewer reads everything via `memory_recall` or `memory_smart_search`.
+The re-reviewer verdicts each finding ADDRESSED or NOT ADDRESSED and flags
+new breakage in the fix diff only. New Critical/Important breakage in the
+fix diff joins the open findings list. Out-of-scope observations go to
+the DAG as deferred minors — they never extend the loop.
 
 **After each round,** append to the DAG:
 `Task <N>: fix round <R>/5 (<X> addressed, <Y> open — <finding one-liners>; commits <a7>..<b7>)`
@@ -421,13 +430,13 @@ parked-with-ruling at the cap.
 
 ## Final Review
 
-The final whole-branch review gets a package too: run
+The final whole-branch review gets a review package observation too: run
 `scripts/review-package <plan-id> MERGE_BASE HEAD` (MERGE_BASE = the commit the
-branch started from, e.g. `git merge-base main HEAD`) and include the
-printed path in the final review dispatch, so the final reviewer reads
-one file instead of re-deriving the branch diff with git commands. Dispatch
-on the most capable available model (see Model Selection), using
-superpowers:requesting-code-review's
+branch started from, e.g. `git merge-base main HEAD`), save the output as
+an observation (`memory_save` with `type=observation`,
+`concepts=review-package,final,<plan_id>`), and include the observation ID
+in the final review dispatch. Dispatch on the most capable available model
+(see Model Selection), using superpowers:requesting-code-review's
 [code-reviewer.md](../requesting-code-review/code-reviewer.md). Point it at
 the DAG's deferred-minor and parked lines so it can triage which must be
 fixed before merge.
@@ -447,7 +456,7 @@ finishing-a-development-branch presents the options.
 
 ## Finish
 
-Before you delete anything, collect every ruling from the DAG — query
+Before you finish, collect every ruling from the DAG — query
 `memory_smart_search` for ruling memories (rulings are saved with
 `memory_save`) or `memory_facet_query` for actions tagged with rulings —
 preflight rulings, parked findings, breaker adjudications, all of them —
@@ -456,12 +465,10 @@ them, each with what it costs if wrong. The list is exhaustive: if the
 DAG holds a ruling, the list holds it. That list is the only place the
 decisions you took on your human partner's behalf reach them — they read
 it and rework whatever you got wrong. A ruling that dies with the
-workspace was a decision made in secret.
+session was a decision made in secret.
 
-When the final whole-branch review is clean and its fixes are merged,
-delete this plan's workspace (`rm -rf <workspace>`) — the git history and
-the DAG are the record now. Sibling directories belong to other plans;
-leave them alone.
+Everything lives in agentmemory — no workspace to delete, no files to
+clean up. The git history and the DAG are the record.
 
 Use superpowers:finishing-a-development-branch.
 
@@ -484,9 +491,8 @@ Use superpowers:finishing-a-development-branch.
 ```
 You: I'm using Subagent-Driven Development to execute this plan.
 
-[Setup: worktree verified]
+[Setup: branch verified]
 [Read plan from DAG: memory_frontier project=<name> — tasks listed with statuses]
-[Resolve workspace: scripts/sdd-workspace for diff packages only]
 [Verify spec slot exists]
 
 Task 1: Hook installation script
@@ -505,8 +511,11 @@ Implementer: [Later]
   - Added tests, 5/5 passing
   - Self-review: Found I missed --force flag, added it
   - Committed
+  - Saved report as observation: memory_save type=observation, concepts=report,task-1
+  - Returned signal with status=DONE, report_obs_id=obs_xxx
 
-[Run review-package BASE HEAD; dispatch task reviewer with the printed path]
+[Save review package as observation: scripts/review-package → memory_save]
+[Dispatch task reviewer via signal: type=findings, report_obs_id=obs_xxx, diff_obs_id=obs_yyy]
 Task reviewer: Spec ✅ - all requirements met, nothing extra.
   Strengths: Good test coverage, clean. Issues: None. Task quality: Approved.
 
@@ -523,17 +532,19 @@ Implementer: [No questions]
   - Added verify/repair modes
   - 8/8 tests passing
   - Committed
+  - Saved report as observation
 
-[Run review-package BASE HEAD; dispatch task reviewer with the printed path]
+[Save review package as observation]
+[Dispatch task reviewer via signal]
 Task reviewer: Spec ❌:
   - Missing: Progress reporting (spec says "report every 100 items")
   Issues (Important): Magic number (100)
 
-[Fix round 1: resume the implementer with both findings]
+[Fix round 1: resume implementer via signal with findings]
 Implementer: Added progress reporting, extracted PROGRESS_INTERVAL constant.
-  Re-ran test/recovery.test.js — 10/10 passing. Fix report appended.
+  Re-ran test/recovery.test.js — 10/10 passing. Saved fix report as observation.
 
-[Run review-package FIX_BASE HEAD; dispatch scoped re-review]
+[Save fix diff as observation, dispatch scoped re-review via signal]
 Re-reviewer: Missing progress reporting — ADDRESSED (src/recovery.js:41).
   Magic number — ADDRESSED (src/recovery.js:7). New breakage: none.
   Verdict: all findings addressed.
@@ -544,10 +555,10 @@ Re-reviewer: Missing progress reporting — ADDRESSED (src/recovery.js:41).
 ...
 
 [After all tasks]
-[Run review-package MERGE_BASE HEAD; dispatch final code-reviewer, most capable model]
+[Save final review package as observation, dispatch final code-reviewer via signal]
 Final reviewer: All requirements met. Deferred minors triaged: none block merge.
 
-[Delete workspace — record lives in git + DAG]
+[Record completion in DAG]
 
 Done! Using superpowers:finishing-a-development-branch.
 ```

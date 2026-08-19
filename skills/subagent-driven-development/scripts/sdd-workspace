@@ -1,29 +1,12 @@
 #!/usr/bin/env bash
-# Resolve and ensure the working-tree directory SDD uses for one plan's
-# short-lived artifacts: task briefs, implementer reports, review packages,
-# and the progress ledger. Print the plan directory's absolute path.
+# DEPRECATED: This script is no longer used in the agentmemory-native workflow.
+# All SDD artifacts (briefs, reports, diffs, rulings) now live in agentmemory
+# as observations and signals. No workspace directory is created.
 #
-# One directory per plan (.superpowers/sdd/<slug>/) so a follow-up
-# plan in the same working tree can never read or overwrite another plan's
-# artifacts.
-#
-# Usage: sdd-workspace <slug>
-# Slug: an action ID, plan name, or any stable identifier (no whitespace).
+# Kept for backward compatibility. The controller saves review packages
+# directly as observations via `memory_save` after running review-package.
 set -euo pipefail
 
-if [ $# -ne 1 ]; then
-  echo "usage: sdd-workspace <slug>" >&2
-  exit 2
-fi
-
-slug=$1
-[ -n "$slug" ] || { echo "slug must not be empty" >&2; exit 2; }
-# Sanitize: replace spaces, drop slashes/colons
-slug=$(echo "$slug" | tr ' /:' '___')
-
-root=$(git rev-parse --show-toplevel)
-base="$root/.superpowers/sdd"
-dir="$base/$slug"
-mkdir -p "$dir"
-printf '*\n' > "$base/.gitignore"
-cd "$dir" && pwd
+echo "WARNING: sdd-workspace is deprecated. All artifacts live in agentmemory." >&2
+echo "Use memory_save to store review packages as observations." >&2
+exit 0
