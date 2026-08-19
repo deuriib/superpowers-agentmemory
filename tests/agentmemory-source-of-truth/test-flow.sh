@@ -53,19 +53,19 @@ check "No docs/superpowers/plans/ reference" \
   "docs/superpowers/plans/" \
   "absent"
 
-check "Has action_create reference" \
+check "Has memory_action_create reference" \
   "$SKILLS_DIR/writing-plans/SKILL.md" \
-  "action_create" \
+  "memory_action_create" \
   "present"
 
-check "Has facet_tag reference" \
+check "Has memory_facet_tag reference" \
   "$SKILLS_DIR/writing-plans/SKILL.md" \
-  "facet_tag" \
+  "memory_facet_tag" \
   "present"
 
-check "Has slot_create reference" \
+check "Has memory_slot_create reference" \
   "$SKILLS_DIR/writing-plans/SKILL.md" \
-  "slot_create" \
+  "memory_slot_create" \
   "present"
 echo
 
@@ -73,22 +73,22 @@ echo
 echo "--- subagent-driven-development: DAG as ledger ---"
 check "No progress.md as source" \
   "$SKILLS_DIR/subagent-driven-development/SKILL.md" \
-  "progress\.md.*needed" \
+  "progress\.md.*(is|as).*(needed|source)" \
   "absent"
 
-check "Has frontier reference" \
+check "Has memory_frontier reference" \
   "$SKILLS_DIR/subagent-driven-development/SKILL.md" \
-  "frontier" \
+  "memory_frontier" \
   "present"
 
-check "Has signal_send reference" \
+check "Has memory_signal_send reference" \
   "$SKILLS_DIR/subagent-driven-development/SKILL.md" \
-  "signal_send" \
+  "memory_signal_send" \
   "present"
 
-check "Has action_update reference" \
+check "Has memory_action_update reference" \
   "$SKILLS_DIR/subagent-driven-development/SKILL.md" \
-  "action_update" \
+  "memory_action_update" \
   "present"
 
 check "No task-brief script" \
@@ -99,32 +99,37 @@ echo
 
 # 4. executing-plans: uses frontier/lease
 echo "--- executing-plans: frontier/lease ---"
-check "Has frontier reference" \
+check "Has memory_frontier reference" \
   "$SKILLS_DIR/executing-plans/SKILL.md" \
-  "frontier" \
+  "memory_frontier" \
   "present"
 
-check "Has lease reference" \
+check "Has memory_lease reference" \
   "$SKILLS_DIR/executing-plans/SKILL.md" \
-  "lease" \
+  "memory_lease" \
   "present"
 
-check "Has action_update reference" \
+check "Has memory_action_update reference" \
   "$SKILLS_DIR/executing-plans/SKILL.md" \
-  "action_update" \
+  "memory_action_update" \
   "present"
 echo
 
 # 5. requesting-code-review: checkpoint integration
 echo "--- requesting-code-review: checkpoint ---"
-check "Has checkpoint_create reference" \
+check "Has memory_checkpoint reference" \
   "$SKILLS_DIR/requesting-code-review/SKILL.md" \
-  "checkpoint_create" \
+  "memory_checkpoint" \
   "present"
 
-check "Has checkpoint_resolve reference" \
+check "Has checkpoint create operation" \
   "$SKILLS_DIR/requesting-code-review/SKILL.md" \
-  "checkpoint_resolve" \
+  "operation: create" \
+  "present"
+
+check "Has checkpoint resolve operation" \
+  "$SKILLS_DIR/requesting-code-review/SKILL.md" \
+  "operation=resolve" \
   "present"
 
 check "Has memory_save reference" \
@@ -135,14 +140,14 @@ echo
 
 # 6. finishing-a-development-branch: crystallize + snapshot
 echo "--- finishing-a-development-branch: closure ---"
-check "Has crystallize reference" \
+check "Has memory_crystallize reference" \
   "$SKILLS_DIR/finishing-a-development-branch/SKILL.md" \
-  "crystallize" \
+  "memory_crystallize" \
   "present"
 
-check "Has snapshot_create reference" \
+check "Has memory_snapshot_create reference" \
   "$SKILLS_DIR/finishing-a-development-branch/SKILL.md" \
-  "snapshot_create" \
+  "memory_snapshot_create" \
   "present"
 
 check "Has slot closure" \

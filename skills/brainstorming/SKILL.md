@@ -78,7 +78,7 @@ Classify first, announce the path, then create a task for each item on
 your path and complete them in order.
 
 **Spike:**
-1. **Recall from agentmemory** — `smart_search` + `lesson_recall` on the topic (core queries only)
+1. **Recall from agentmemory** — `memory_smart_search` + `memory_lesson_recall` on the topic (core queries only)
 2. **Explore project context** — enough to frame the probe
 3. **Present question + probe plan** — 2-3 sentences; reference any relevant past decisions or lessons found
 4. **Get approval** — a nod is enough
@@ -86,7 +86,7 @@ your path and complete them in order.
 6. **Report findings** — a recommendation; label anything built as throwaway
 
 **Bounded:**
-1. **Recall from agentmemory** — `smart_search` + `lesson_recall` on the topic; `file_history` on files likely to be affected
+1. **Recall from agentmemory** — `memory_smart_search` + `memory_lesson_recall` on the topic; `memory_file_history` on files likely to be affected
 2. **Explore project context** — check files, docs, recent commits
 3. **Ask clarifying questions** — one at a time, the ones that matter; reference past decisions/lessons from memory
 4. **Present short design in chat** — approach, files touched, testing
@@ -94,13 +94,13 @@ your path and complete them in order.
 6. **Implement** — proceed with the normal development workflow (TDD applies); no plan document
 
 **Architectural:**
-1. **Recall from agentmemory** — full protocol: `smart_search` + `lesson_recall` + `profile` + `sessions` + `patterns` + `graph_query` on the domain
+1. **Recall from agentmemory** — full protocol: `memory_smart_search` + `memory_lesson_recall` + `memory_profile` + `memory_sessions` + `memory_patterns` + `memory_graph_query` on the domain
 2. **Explore project context** — check files, docs, recent commits
 3. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
 4. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria; surface relevant memory findings as conversation starters
 5. **Propose 2-3 approaches** — with trade-offs and your recommendation; follow established patterns found in memory
 6. **Present design** — in sections scaled to their complexity, get user approval after each section
-7. **Save design to slot** — `slot_create` with label `spec_<topic_slug>`, content is the full design text, pinned: true
+7. **Save design to slot** — `memory_slot_create` with label `spec_<topic_slug>`, content is the full design text, pinned: false
 8. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 9. **User reviews saved spec** — ask user to review the saved design before proceeding
 10. **Transition to implementation** — invoke writing-plans skill to create implementation plan
@@ -201,7 +201,7 @@ How to use the results:
 - **Past work found** → check if it's reusable or conflicts with the new idea
 - **Patterns found** → follow established conventions instead of proposing new ones
 
-If smart_search returns nothing relevant, proceed without forcing connections — not everything has prior context.
+If `memory_smart_search` returns nothing relevant, proceed without forcing connections — not everything has prior context.
 
 **Exploring approaches:**
 
@@ -235,10 +235,10 @@ If smart_search returns nothing relevant, proceed without forcing connections �
 
 **Documentation:**
 
-- Save the validated design (spec) to a slot via `slot_create`
+- Save the validated design (spec) to a slot via `memory_slot_create`
   - `label`: `spec_<topic_slug>` (e.g., `spec_auth_oauth2`)
   - `content`: the full design text
-  - `pinned: true` (excluded from context injection but always accessible)
+  - `pinned: false` (excluded from context injection but always accessible via `memory_slot_get`)
 - The slot label becomes the reference for writing-plans: `Spec: slot spec_<topic_slug>`
 
 **Spec Self-Review:**

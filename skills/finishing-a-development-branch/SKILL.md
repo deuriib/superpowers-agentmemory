@@ -207,20 +207,20 @@ development cycle as a crystal and snapshot for future reference.
 
 **1. Crystallize the completed actions:**
 ```
-crystallize
+memory_crystallize
   actionIds: <comma-separated action IDs of completed plan tasks>
   project: <project name>
 ```
 
 **2. Create a snapshot:**
 ```
-snapshot_create
+memory_snapshot_create
   message: "Completed: <feature name>. Tasks: <N>. Branch: <branch>."
 ```
 
 **3. Create a closure slot:**
 ```
-slot_create
+memory_slot_create
   label: "{plan_id}_closure"
   content: |
     Plan: <name>
@@ -230,7 +230,7 @@ slot_create
     Summary: <what was built>
     Decisions: <key rulings made>
     Lessons: <what was learned>
-  pinned: true
+  pinned: false
 ```
 
 **4. Clean up ephemeral diff packages:**

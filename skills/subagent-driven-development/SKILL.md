@@ -132,11 +132,11 @@ partner's explicit consent.
 but agentmemory does. Track all progress in the agentmemory action DAG —
 it survives compaction, is queryable, and is the single source of truth.
 
-- At skill start, read the plan from the DAG: `frontier project=<name>`
+- At skill start, read the plan from the DAG: `memory_frontier project=<name>`
   returns unblocked tasks. Each action's status (`pending`, `active`, `done`)
   IS the DAG — no `progress.md` file needed.
-- **Recovery after compaction:** query the DAG (`frontier` or
-  `facet_query targetType=action matchAll=plan:<plan_id>`) to see what's
+- **Recovery after compaction:** query the DAG (`memory_frontier` or
+  `memory_facet_query targetType=action matchAll=plan:<plan_id>`) to see what's
   done and what remains. Cross-reference with `git log` for commit SHA
   verification.
 - **Workspace** (`.superpowers/sdd/<plan>/`) is now ONLY for ephemeral
@@ -219,9 +219,9 @@ and fix-round diffs need it.
 
 - **Task brief via signal:** before dispatching an implementer, read the
   task's full text from the action description in the DAG (use
-  `facet_query` or `frontier` to find the action). Then send it to the
-  implementer via `signal_send` with `type=handoff` and the full task
-  description as content. The implementer reads it via `signal_read`.
+  `memory_facet_query` or `memory_frontier` to find the action). Then send it to the
+  implementer via `memory_signal_send` with `type=handoff` and the full task
+  description as content. The implementer reads it via `memory_signal_read`.
   Your dispatch should contain: (1) one line on where this task fits in
   the project; (2) the signal ID, introduced as "read this signal first —
   it is your requirements"; (3) interfaces and decisions from earlier
@@ -439,7 +439,8 @@ finishing-a-development-branch presents the options.
 ## Finish
 
 Before you delete anything, collect every ruling from the DAG — query
-`memory_save` entries or `facet_query` for actions tagged with rulings —
+`memory_smart_search` for ruling memories (rulings are saved with
+`memory_save`) or `memory_facet_query` for actions tagged with rulings —
 preflight rulings, parked findings, breaker adjudications, all of them —
 into your final message under "Rulings I made", in the order you made
 them, each with what it costs if wrong. The list is exhaustive: if the
@@ -475,14 +476,14 @@ Use superpowers:finishing-a-development-branch.
 You: I'm using Subagent-Driven Development to execute this plan.
 
 [Setup: worktree verified]
-[Read plan from DAG: frontier project=<name> — tasks listed with statuses]
+[Read plan from DAG: memory_frontier project=<name> — tasks listed with statuses]
 [Resolve workspace: scripts/sdd-workspace for diff packages only]
 [Verify spec slot exists]
 
 Task 1: Hook installation script
 
-[Read action description from DAG via facet_query]
-[Send brief via signal_send to implementer: type=handoff, content=task description]
+[Read action description from DAG via memory_facet_query]
+[Send brief via memory_signal_send to implementer: type=handoff, content=task description]
 
 Implementer: "Before I begin - should the hook be installed at user or system level?"
 
@@ -498,12 +499,12 @@ Implementer: [Later]
 Task reviewer: Spec ✅ - all requirements met, nothing extra.
   Strengths: Good test coverage, clean. Issues: None. Task quality: Approved.
 
-[action_update: Task 1 → done (commits a1b2c3d..d4e5f6a, review clean)]
+[memory_action_update: Task 1 → done (commits a1b2c3d..d4e5f6a, review clean)]
 
 Task 2: Recovery modes
 
-[Read action description from DAG via facet_query]
-[Send brief via signal_send to implementer]
+[Read action description from DAG via memory_facet_query]
+[Send brief via memory_signal_send to implementer]
 
 Implementer: [No questions]
   - Added verify/repair modes
@@ -524,8 +525,8 @@ Re-reviewer: Missing progress reporting — ADDRESSED (src/recovery.js:41).
   Magic number — ADDRESSED (src/recovery.js:7). New breakage: none.
   Verdict: all findings addressed.
 
-[action_update: Task 2 → done (fix round 1/5, commits d4e5f6a..b7c8d9e)]
-[Ruling saved via memory_save: <finding> — <decision> — <cost if wrong>]
+[memory_action_update: Task 2 → done (fix round 1/5, commits d4e5f6a..b7c8d9e)]
+[Ruling saved via memory_save: content=<finding> — <decision> — <cost if wrong>, concepts=ruling,<plan_id>, type=decision]
 
 ...
 

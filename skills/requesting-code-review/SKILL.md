@@ -31,7 +31,8 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Create a review checkpoint (agentmemory):**
 ```
-checkpoint_create
+memory_checkpoint
+  operation: create
   name: "Review: Task N"
   type: approval
   linkedActionIds: <task action ID>
@@ -53,8 +54,8 @@ Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md
 - Fix Important issues before proceeding
 - Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
-- After fixing: `checkpoint_resolve status=passed` (or `failed` if unresolved)
-- Store findings as observations: `memory_save` with concepts and files
+- After fixing: `memory_checkpoint` with `operation=resolve`, `checkpointId=<checkpoint ID>`, `status=passed` (or `failed` if unresolved)
+- Save findings to long-term memory: `memory_save` with `content` (the finding), `concepts`, and `files` (observations are captured automatically by hooks)
 
 ## Example
 

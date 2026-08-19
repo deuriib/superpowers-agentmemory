@@ -23,7 +23,7 @@ Plans live in the agentmemory action DAG, not in .md files. The DAG is the singl
 
 1. **Create the plan root action:**
    ```
-   action_create
+   memory_action_create
      title: "[Feature Name] Implementation Plan"
      description: |
        Goal: [One sentence]
@@ -40,7 +40,7 @@ Plans live in the agentmemory action DAG, not in .md files. The DAG is the singl
 
 2. **Create one action per task:**
    ```
-   action_create
+   memory_action_create
      title: "Task N: [Component Name]"
      description: |
        Files:
@@ -64,22 +64,22 @@ Plans live in the agentmemory action DAG, not in .md files. The DAG is the singl
      tags: task, plan:<plan_id>
    ```
 
-3. **Tag all actions** with `facet_tag` dimension "plan", value "{plan_id}" for querying.
+3. **Tag all actions** with `memory_facet_tag`: for each action, call it with `targetId=<action ID>`, `targetType=action`, `dimension=plan`, `value={plan_id}` for querying.
 
 4. **Create the context slot:**
    ```
-   slot_create
+   memory_slot_create
      label: "{plan_id}_context"
      content: "Plan: <name>\nPlan ID: <action ID>\nSpec slot: <slot>\nTasks: <list with IDs>"
-     pinned: true
+     pinned: false
    ```
 
 ### What changes vs. the old .md approach
 
 - **No .md files generated.** The DAG is the plan.
-- **frontier** replaces file scanning: `frontier project=<name>` returns unblocked tasks.
-- **Briefs via signals:** the controller reads the action description and sends it via `signal_send` to the implementer.
-- **Ledger replaced by DAG:** `action_update done` = task complete. No `progress.md`.
+- **memory_frontier** replaces file scanning: `memory_frontier project=<name>` returns unblocked tasks.
+- **Briefs via signals:** the controller reads the action description and sends it via `memory_signal_send` (`from`=controller, `to`=implementer, `content`=task description) to the implementer.
+- **Ledger replaced by DAG:** `memory_action_update` with `status=done` = task complete. No `progress.md`.
 
 ## Scope Check
 
@@ -183,9 +183,9 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 After creating the plan in the DAG, offer execution choice:
 
-**"Plan complete and registered in agentmemory DAG. Task 1 is unblocked (`frontier` confirms). Two execution options:**
+**"Plan complete and registered in agentmemory DAG. Task 1 is unblocked (`memory_frontier` confirms). Two execution options:**
 
-**1. Subagent-Driven (recommended)** - Dispatch a fresh subagent per task via `signal_send`, review between tasks, fast iteration
+**1. Subagent-Driven (recommended)** - Dispatch a fresh subagent per task via `memory_signal_send`, review between tasks, fast iteration
 
 **2. Inline Execution** - Execute tasks in this session, updating the DAG as you go
 
@@ -194,8 +194,8 @@ After creating the plan in the DAG, offer execution choice:
 **If Subagent-Driven chosen:**
 - **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
 - Fresh subagent per task + two-stage review
-- Briefs sent via `signal_send`, not file-based
+- Briefs sent via `memory_signal_send`, not file-based
 
 **If Inline Execution chosen:**
 - Execute directly from the DAG
-- Use `frontier` to find unblocked tasks, `lease` to claim, `action_update` to mark done
+- Use `memory_frontier` to find unblocked tasks, `memory_lease` (`operation=acquire`) to claim, `memory_action_update` (`status=done`) to mark done

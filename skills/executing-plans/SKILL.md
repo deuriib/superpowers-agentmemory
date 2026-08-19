@@ -17,23 +17,23 @@ Load plan from the agentmemory DAG, review critically, execute all tasks, report
 
 ### Step 1: Load and Review Plan
 1. Ensure an isolated workspace: use superpowers:using-git-worktrees to create one or verify the existing one
-2. Read plan from the DAG: `frontier project=<name>` returns unblocked tasks with descriptions
+2. Read plan from the DAG: `memory_frontier project=<name>` returns unblocked tasks with descriptions
 3. Review critically — identify any questions or concerns about the plan
 4. If concerns: Raise them with your human partner before starting
 5. If no concerns: proceed to execution
 
 ### Step 2: Execute Tasks
 
-For each unblocked task (from `frontier`):
-1. Claim the action: `lease` acquire (prevents other agents from working it)
+For each unblocked task (from `memory_frontier`):
+1. Claim the action: `memory_lease` with `operation=acquire`, `actionId=<task ID>`, `agentId=<your ID>` (prevents other agents from working it)
 2. Follow each step exactly (task description has bite-sized steps)
 3. Run verifications as specified
-4. Mark as done: `action_update status=done`
-5. Verify: `frontier` now shows the next unblocked task
+4. Mark as done: `memory_action_update` with `actionId=<task ID>`, `status=done`
+5. Verify: `memory_frontier` now shows the next unblocked task
 
 ### Step 3: Complete Development
 
-After all tasks complete and verified (frontier returns empty):
+After all tasks complete and verified (memory_frontier returns empty):
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice
@@ -60,7 +60,7 @@ After all tasks complete and verified (frontier returns empty):
 - Review plan critically first (from the DAG, not a file)
 - Follow task steps exactly
 - Don't skip verifications
-- Use `lease` to claim before working, `action_update` to complete
+- Use `memory_lease` (`operation=acquire`) to claim before working, `memory_action_update` (`status=done`) to complete
 - Reference skills when plan says to
 - Stop when blocked, don't guess
 - Never start implementation on main/master branch without explicit user consent
