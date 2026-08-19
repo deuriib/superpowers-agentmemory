@@ -146,7 +146,8 @@ it survives compaction, is queryable, and is the single source of truth.
   if that happens, recover from `git log` and the DAG.
 
 Read the plan from the DAG once — note its Global Constraints and task
-dependencies. If the plan references a Spec slot, read that too: the spec
+dependencies. If the plan references a Spec slot, read that too with
+`memory_slot_get` (`label=<spec slot label>`): the spec
 is the authority the plan argues from, and conflicts inside the plan
 resolve against it.
 
@@ -217,6 +218,10 @@ child is noticed within minutes, not at the end of the session.
 Record BASE (`git rev-parse HEAD`) before dispatching — the review package
 and fix-round diffs need it.
 
+- **Claim and activate the action:** before dispatching, claim the action
+  with `memory_lease` (`operation=acquire`, `actionId=<task action ID>`,
+  `agentId=<controller ID>`) and mark it active with
+  `memory_action_update` (`actionId=<task action ID>`, `status=active`).
 - **Task brief via signal:** before dispatching an implementer, read the
   task's full text from the action description in the DAG (use
   `memory_facet_query` or `memory_frontier` to find the action). Then send it to the
@@ -406,6 +411,10 @@ message as your other bookkeeping:
 - `Task <N>: complete (commits <base7>..<head7>, <K> parked)` after a
   tripped breaker
 
+Release the lease with `memory_lease` (`operation=release`,
+`actionId=<task action ID>`, `agentId=<controller ID>`,
+`result=<completion summary>`).
+
 Then mark the todo complete and move on. Never move to the next task while
 the review has open Critical/Important issues that are neither fixed nor
 parked-with-ruling at the cap.
@@ -482,6 +491,8 @@ You: I'm using Subagent-Driven Development to execute this plan.
 
 Task 1: Hook installation script
 
+[memory_lease: Task 1 → acquired by controller]
+[memory_action_update: Task 1 → active]
 [Read action description from DAG via memory_facet_query]
 [Send brief via memory_signal_send to implementer: type=handoff, content=task description]
 
@@ -503,6 +514,8 @@ Task reviewer: Spec ✅ - all requirements met, nothing extra.
 
 Task 2: Recovery modes
 
+[memory_lease: Task 2 → acquired by controller]
+[memory_action_update: Task 2 → active]
 [Read action description from DAG via memory_facet_query]
 [Send brief via memory_signal_send to implementer]
 
@@ -526,7 +539,7 @@ Re-reviewer: Missing progress reporting — ADDRESSED (src/recovery.js:41).
   Verdict: all findings addressed.
 
 [memory_action_update: Task 2 → done (fix round 1/5, commits d4e5f6a..b7c8d9e)]
-[Ruling saved via memory_save: content=<finding> — <decision> — <cost if wrong>, concepts=ruling,<plan_id>, type=decision]
+[Ruling saved via memory_save: content=<finding> — <decision> — <cost if wrong>, concepts=ruling,<plan_id>, type=architecture]
 
 ...
 

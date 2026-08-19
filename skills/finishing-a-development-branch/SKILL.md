@@ -233,9 +233,19 @@ memory_slot_create
   pinned: false
 ```
 
-**4. Clean up ephemeral diff packages:**
+**4. Mark the plan root action done and clean up context:**
+```
+memory_action_update
+  actionId: <plan root action ID>
+  status: done
+
+memory_slot_delete
+  label: "{plan_id}_context"  # created when the plan was written
+```
+
+**5. Clean up ephemeral diff packages:**
 ```bash
-rm -rf .superpowers/sdd/<plan-basename>/review-*.diff
+rm -rf .superpowers/sdd/<plan>/review-*.diff
 ```
 
 ## Quick Reference

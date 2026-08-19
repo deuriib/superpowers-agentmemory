@@ -84,6 +84,23 @@ When agents return:
 - Run full test suite
 - Integrate all changes
 
+## Working on the Same Plan DAG
+
+When parallel agents work on actions of the same agentmemory plan, the controller must claim each agent's action before dispatch to prevent double work:
+
+1. Before dispatching each agent, claim its action with `memory_lease`
+   (`operation=acquire`, `actionId=<task action ID>`,
+   `agentId=<controller ID>`).
+2. Mark the action active with `memory_action_update`
+   (`actionId=<task action ID>`, `status=active`).
+3. Agents report results back to the controller via `memory_signal_send`
+   (`type=response`, `from=<agent ID>`, `to=<controller ID>`).
+4. The controller reads the responses with `memory_signal_read`
+   (`agentId=<controller ID>`) before integrating results.
+
+This ensures no two agents work the same action and the controller
+receives structured completion signals.
+
 ## Agent Prompt Structure
 
 Good agent prompts are:

@@ -240,6 +240,7 @@ If `memory_smart_search` returns nothing relevant, proceed without forcing conne
   - `content`: the full design text
   - `pinned: false` (excluded from context injection but always accessible via `memory_slot_get`)
 - The slot label becomes the reference for writing-plans: `Spec: slot spec_<topic_slug>`
+- Save key design decisions to long-term memory: `memory_save` with `content` (the decisions and why), `concepts` (design, <topic>), `type=architecture`
 
 **Spec Self-Review:**
 After saving the design to the slot, review it with fresh eyes:

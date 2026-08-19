@@ -194,14 +194,17 @@ You MUST complete each phase before proceeding to the next.
    - Issue actually resolved?
    - Use the `superpowers:verification-before-completion` skill before claiming success
 
-4. **If Fix Doesn't Work**
+4. **Save the lesson**
+   - Save the root cause and fix with `memory_lesson_save` (tags `bug,<component>`, confidence 0.7)
+
+5. **If Fix Doesn't Work**
    - STOP
    - Count: How many fixes have you tried?
    - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 5 below)**
+   - **If ≥ 3: STOP and question the architecture (step 6 below)**
    - DON'T attempt Fix #4 without architectural discussion
 
-5. **If 3+ Fixes Failed: Question Architecture**
+6. **If 3+ Fixes Failed: Question Architecture**
 
    **Pattern indicating architectural problem:**
    - Each fix reveals new shared state/coupling/problem in different place
@@ -299,7 +302,7 @@ If you catch yourself thinking:
 | **1. Root Cause** | Recall from memory, read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
 | **2. Pattern** | Find working examples, compare | Identify differences |
 | **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
-| **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
+| **4. Implementation** | Create test, fix, verify, save lesson | Bug resolved, tests pass |
 
 ## When Process Reveals "No Root Cause"
 

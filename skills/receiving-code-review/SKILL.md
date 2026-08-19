@@ -18,11 +18,21 @@ WHEN receiving code review feedback:
 
 1. READ: Complete feedback without reacting
 2. UNDERSTAND: Restate requirement in own words (or ask)
-3. VERIFY: Check against codebase reality
+3. VERIFY: Check against codebase reality + agentmemory context
 4. EVALUATE: Technically sound for THIS codebase?
 5. RESPOND: Technical acknowledgment or reasoned pushback
 6. IMPLEMENT: One item at a time, test each
 ```
+
+## Verify Against agentmemory
+
+Before implementing, check whether the feedback conflicts with past decisions or lessons:
+
+1. **`memory_smart_search`** on the review topic — surfaces past decisions, prior discussions, and related work. If the suggestion contradicts a recorded decision, you have grounds for informed pushback.
+2. **`memory_lesson_recall`** on the topic — catches "we tried this before and learned..." lessons that apply to the suggestion.
+3. **`memory_file_history`** on the files the feedback touches — shows what was observed about those files across sessions (why the code is the way it is).
+
+Use the results in step 3 (VERIFY) of the Response Pattern: feedback that contradicts recorded decisions or lessons gets technical pushback, not blind implementation.
 
 ## Forbidden Responses
 
@@ -69,7 +79,7 @@ You understand 1,2,3,6. Unclear on 4,5.
 BEFORE implementing:
   1. Check: Technically correct for THIS codebase?
   2. Check: Breaks existing functionality?
-  3. Check: Reason for current implementation?
+  3. Check: Reason for current implementation? (use `memory_file_history` on the affected files)
   4. Check: Works on all platforms/versions?
   5. Check: Does reviewer understand full context?
 
@@ -108,6 +118,7 @@ FOR multi-item feedback:
      - Complex fixes (refactoring, logic)
   3. Test each fix individually
   4. Verify no regressions
+  5. If the feedback revealed a lesson (a codebase rule, a pattern you missed): save it with `memory_lesson_save` (`content` = the lesson, `tags` = review,<topic>)
 ```
 
 ## When To Push Back
@@ -118,7 +129,7 @@ Push back when:
 - Violates YAGNI (unused feature)
 - Technically incorrect for this stack
 - Legacy/compatibility reasons exist
-- Conflicts with your human partner's architectural decisions
+- Conflicts with your human partner's architectural decisions (check via `memory_smart_search` / `memory_lesson_recall`)
 
 **How to push back:**
 - Use technical reasoning, not defensiveness

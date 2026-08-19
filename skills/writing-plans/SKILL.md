@@ -21,7 +21,9 @@ Plans live in the agentmemory action DAG, not in .md files. The DAG is the singl
 
 ### Creating a plan
 
-1. **Create the plan root action:**
+1. **Read the spec slot:** `memory_slot_get` with `label=<spec slot label>` — the spec is the authority the plan argues from; conflicts inside the plan resolve against it.
+
+2. **Create the plan root action:**
    ```
    memory_action_create
      title: "[Feature Name] Implementation Plan"
@@ -38,7 +40,7 @@ Plans live in the agentmemory action DAG, not in .md files. The DAG is the singl
      tags: plan, agentmemory
    ```
 
-2. **Create one action per task:**
+3. **Create one action per task:**
    ```
    memory_action_create
      title: "Task N: [Component Name]"
@@ -64,9 +66,9 @@ Plans live in the agentmemory action DAG, not in .md files. The DAG is the singl
      tags: task, plan:<plan_id>
    ```
 
-3. **Tag all actions** with `memory_facet_tag`: for each action, call it with `targetId=<action ID>`, `targetType=action`, `dimension=plan`, `value={plan_id}` for querying.
+4. **Tag all actions** with `memory_facet_tag`: for each action, call it with `targetId=<action ID>`, `targetType=action`, `dimension=plan`, `value={plan_id}` for querying.
 
-4. **Create the context slot:**
+5. **Create the context slot:**
    ```
    memory_slot_create
      label: "{plan_id}_context"
