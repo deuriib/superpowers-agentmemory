@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { fileURLToPath } from 'url';
+import { spawnSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,6 +52,17 @@ const normalizePath = (p, homeDir) => {
 // once eliminates redundant fs.existsSync + fs.readFileSync + regex work on
 // every agent step.  See #1202 for the full analysis.
 let _bootstrapCache = undefined; // undefined = not yet loaded, null = file missing
+
+// Prefer bun; fall back to npx when bun is not on PATH (hosts without bun installed).
+// Evaluated once at plugin load; spawnSync without shell mirrors how OpenCode
+// spawns local MCP servers (PATH resolution), so a missing bun yields status null.
+const hasBun = (() => {
+  try {
+    return spawnSync('bun', ['--version'], { stdio: 'ignore' }).status === 0;
+  } catch {
+    return false;
+  }
+})();
 
 export const SuperpowersPlugin = async ({ client, directory }) => {
   const homeDir = os.homedir();
@@ -116,7 +128,7 @@ ${toolMapping}
       if (!config.mcp['agentmemory']) {
         config.mcp['agentmemory'] = {
           type: 'local',
-          command: ['bun', 'x', '-y', '@agentmemory/mcp'],
+          command: hasBun ? ['bun', 'x', '-y', '@agentmemory/mcp'] : ['npx', '-y', '@agentmemory/mcp'],
           enabled: true,
         };
       }
