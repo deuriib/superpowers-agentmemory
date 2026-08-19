@@ -83,14 +83,14 @@ digraph process {
         "Append completion to DAG, mark todo complete" [shape=box];
     }
 
-    "Setup: branch, DAG check, read plan, pre-flight review" [shape=box];
+    "Setup: worktree, DAG check, read plan, pre-flight review" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" [shape=box];
     "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals" [shape=box];
     "Final review clean: record in DAG" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Setup: branch, DAG check, read plan, pre-flight review" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Setup: worktree, DAG check, read plan, pre-flight review" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer asks questions?";
     "Implementer asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Implementer implements, tests, commits, self-reviews";
@@ -123,8 +123,10 @@ digraph process {
 
 ## Setup
 
-Verify the work happens on the correct branch. Never start implementation
-on a main/master branch without your human partner's explicit consent.
+Ensure the work happens in an isolated workspace: use
+superpowers:using-git-worktrees to create one or verify the existing one.
+Never start implementation on a main/master branch without your human
+partner's explicit consent.
 
 **The DAG is your DAG.** Conversation memory does not survive compaction,
 but agentmemory does. Track all progress in the agentmemory action DAG —
@@ -491,7 +493,7 @@ Use superpowers:finishing-a-development-branch.
 ```
 You: I'm using Subagent-Driven Development to execute this plan.
 
-[Setup: branch verified]
+[Setup: worktree verified]
 [Read plan from DAG: memory_frontier project=<name> — tasks listed with statuses]
 [Verify spec slot exists]
 
