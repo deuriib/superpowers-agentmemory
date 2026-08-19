@@ -49,25 +49,31 @@ You MUST complete each phase before proceeding to the next.
 
 **BEFORE attempting ANY fix:**
 
-1. **Read Error Messages Carefully**
+1. **Recall Prior Knowledge from agentmemory**
+   - BEFORE touching files, query memory for prior context on this bug (see Debugging Recall Protocol below)
+   - Past sessions may already contain this exact error, its root cause, and the fix
+   - Skip only if the memory server is down (503)
+
+2. **Read Error Messages Carefully**
    - Don't skip past errors or warnings
    - They often contain the exact solution
    - Read stack traces completely
    - Note line numbers, file paths, error codes
 
-2. **Reproduce Consistently**
+3. **Reproduce Consistently**
    - Can you trigger it reliably?
    - What are the exact steps?
    - Does it happen every time?
    - If not reproducible → gather more data, don't guess
 
-3. **Check Recent Changes**
+4. **Check Recent Changes**
    - What changed that could cause this?
    - Git diff, recent commits
    - New dependencies, config changes
    - Environmental differences
+   - Check agentmemory for the session context behind recent agent-linked commits (`memory_commits` / `memory_commit_lookup`)
 
-4. **Gather Evidence in Multi-Component Systems**
+5. **Gather Evidence in Multi-Component Systems**
 
    **WHEN system has multiple components (CI → build → signing, API → service → database):**
 
@@ -105,7 +111,7 @@ You MUST complete each phase before proceeding to the next.
 
    **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
 
-5. **Trace Data Flow**
+6. **Trace Data Flow**
 
    **WHEN error is deep in call stack:**
 
@@ -211,6 +217,34 @@ You MUST complete each phase before proceeding to the next.
 
    This is NOT a failed hypothesis - this is a wrong architecture.
 
+   **Also query memory** for past architectural discussions about this pattern (see Debugging Recall Protocol below) — decisions that aren't in the code live in memory.
+
+## Debugging Recall Protocol (agentmemory)
+
+Every debugging session starts by querying memory. This takes seconds and prevents re-diagnosing what's already known — past sessions may already contain this bug, its root cause, and the fix. Skip only if the server is down (503).
+
+Core queries — run these for EVERY bug:
+
+1. **`memory_smart_search`** with the error message, symptom, or component name. Surfaces past occurrences of this bug, past fixes, and related work.
+2. **`memory_lesson_recall`** with the topic. Catches "we tried this before and learned..." — lessons apply directly to the current bug.
+3. **`memory_file_history`** on the files named in the error or stack trace. Shows what was observed about those files across sessions.
+
+Situation-specific queries — add these based on where the investigation leads:
+
+| Situation | Additional queries |
+|-----------|-------------------|
+| **Recent change suspected** (Phase 1 step 4) | + `memory_commits` for agent-linked commits; `memory_commit_lookup` on the breaking commit to recover the session's intent |
+| **3+ fixes failed** (Phase 4 step 5) | + `memory_smart_search` on the architecture/pattern being questioned — was it deliberately chosen? Were there past architectural discussions? |
+| **Error hard to reproduce or timing-dependent** | + `memory_sessions` / `memory_timeline` around when it last happened |
+
+How to use the results:
+
+- **Past fix found** → candidate hypothesis for Phase 3; test it minimally (one variable at a time)
+- **Past failed fix found** → do NOT repeat it; note what was already ruled out
+- **Lesson found** → surface it as a constraint ("Last time we learned Y, so I'll avoid that pattern")
+- **File history found** → check what changed in that file before the bug appeared
+- **Nothing relevant found** → proceed without forcing connections — not every bug has prior context
+
 ## Red Flags - STOP and Follow Process
 
 If you catch yourself thinking:
@@ -222,6 +256,8 @@ If you catch yourself thinking:
 - "I don't fully understand but this might work"
 - "Pattern says X but I'll adapt it differently"
 - "Here are the main problems: [lists fixes without investigation]"
+- "This bug is new, no need to check memory"
+- "I already know what this error means"
 - Proposing solutions before tracing data flow
 - **"One more fix attempt" (when already tried 2+)**
 - **Each fix reveals new problem in different place**
@@ -252,13 +288,15 @@ If you catch yourself thinking:
 | "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
 | "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
 | "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
+| "This bug is new, memory won't have it" | "New" bugs are often repeats. Thirty seconds of recall can save hours of re-diagnosis. |
+| "I already know what this error means" | Knowing the error ≠ knowing what was tried against it. Check memory for past attempts. |
 | "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem. Question pattern, don't fix again. |
 
 ## Quick Reference
 
 | Phase | Key Activities | Success Criteria |
 |-------|---------------|------------------|
-| **1. Root Cause** | Read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
+| **1. Root Cause** | Recall from memory, read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
 | **2. Pattern** | Find working examples, compare | Identify differences |
 | **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
 | **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
