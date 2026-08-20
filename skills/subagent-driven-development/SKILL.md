@@ -229,7 +229,9 @@ and fix-round diffs need it.
   task's full text from the action description in the DAG (use
   `memory_facet_query` or `memory_frontier` to find the action). Then send it to the
   implementer via `memory_signal_send` with `type=handoff` and the full task
-  description as content. The implementer reads it via `memory_signal_read`.
+  description as content. The implementer reads it via `memory_signal_read`
+  (agentId=<its own id>, no `threadId` filter: `thr_...` thread IDs differ
+  from `sig_...` signal IDs).
   Your dispatch should contain: (1) one line on where this task fits in
   the project; (2) the signal ID, introduced as "read this signal first —
   it is your requirements"; (3) interfaces and decisions from earlier

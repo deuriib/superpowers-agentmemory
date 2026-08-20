@@ -21,6 +21,10 @@ Subagent (general-purpose):
     ## What Was Requested
 
     Read the task brief (signal from controller): [BRIEF_SIGNAL]
+    Read it with `memory_signal_read` (agentId=<your agent id>). Do not pass
+    `threadId`: it filters by conversation thread (`thr_...`), not by signal
+    ID (`sig_...`), and a signal ID matches nothing. If the read returns
+    empty, retry without `threadId`.
 
     Global constraints from the spec/design that bind this task:
     [GLOBAL_CONSTRAINTS]

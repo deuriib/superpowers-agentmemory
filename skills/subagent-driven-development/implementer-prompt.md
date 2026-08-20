@@ -15,6 +15,11 @@ Subagent (general-purpose):
     Read your task brief (signal from controller): [BRIEF_SIGNAL]
     It contains the full task text from the plan.
 
+    Read it with `memory_signal_read` (agentId=<your agent id>). Do not pass
+    `threadId`: it filters by conversation thread (`thr_...`), not by signal
+    ID (`sig_...`), and a signal ID matches nothing. If the read returns
+    empty, retry without `threadId` before falling back to this prompt.
+
     ## Context
 
     [Scene-setting: where this fits, dependencies, architectural context]
