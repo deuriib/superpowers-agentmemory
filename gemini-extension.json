@@ -2,5 +2,11 @@
   "name": "superpowers",
   "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques",
   "version": "6.3.0",
-  "contextFileName": "GEMINI.md"
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "agentmemory": {
+      "command": "bun",
+      "args": ["x", "-y", "@agentmemory/mcp"]
+    }
+  }
 }

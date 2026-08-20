@@ -16,5 +16,11 @@
     "collaboration",
     "best-practices",
     "workflows"
-  ]
+  ],
+  "mcpServers": {
+    "agentmemory": {
+      "command": "bun",
+      "args": ["x", "-y", "@agentmemory/mcp"]
+    }
+  }
 }

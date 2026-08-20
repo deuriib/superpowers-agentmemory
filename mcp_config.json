@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "agentmemory": {
+      "command": "bun",
+      "args": ["x", "-y", "@agentmemory/mcp"],
+      "enabled": true
+    }
+  }
+}
