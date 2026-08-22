@@ -53,9 +53,110 @@ const normalizePath = (p, homeDir) => {
 // every agent step.  See #1202 for the full analysis.
 let _bootstrapCache = undefined; // undefined = not yet loaded, null = file missing
 
+/**
+ * Recursively parse nested YAML-like blocks. Each sub-key at baseIndent can
+ * itself be a nested block if its value is empty and the next line is deeper.
+ * Returns { value: object, nextIndex: number }.
+ */
+const parseNestedBlock = (lines, startIndex, baseIndent) => {
+  const result = {};
+  let i = startIndex;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    // Stop if line is blank or indent is less than baseIndent
+    if (line.trim() === '') break;
+    const currentIndent = line.match(/^(\s*)/)[1].length;
+    if (currentIndent < baseIndent) break;
+
+    const colonIdx = line.indexOf(':');
+    if (colonIdx <= 0) { i++; continue; }
+
+    const key = line.slice(0, colonIdx).trim().replace(/^["']|["']$/g, '');
+    const valueAfterColon = line.slice(colonIdx + 1).trim();
+
+    // Check if next line is more deeply indented (sub-nesting)
+    if (valueAfterColon === '' && i + 1 < lines.length) {
+      const nextLine = lines[i + 1];
+      const nextIndent = nextLine.match(/^(\s*)/)[1].length;
+      if (nextIndent > currentIndent) {
+        const parsed = parseNestedBlock(lines, i + 1, nextIndent);
+        result[key] = parsed.value;
+        i = parsed.nextIndex;
+        continue;
+      }
+    }
+
+    // Leaf value
+    let value = valueAfterColon.replace(/^["']|["']$/g, '');
+    if (value === 'true') value = true;
+    else if (value === 'false') value = false;
+    else if (/^-?\d+(\.\d+)?$/.test(value)) value = Number(value);
+    result[key] = value;
+    i++;
+  }
+
+  return { value: result, nextIndex: i };
+};
+
+/**
+ * Parse agent frontmatter supporting 1-level nested objects (e.g. permission blocks).
+ * Handles: flat key:value, quoted strings, booleans, numbers, nested blocks with
+ * 1-level sub-keys. Strips \r for CRLF compatibility.
+ */
+const parseAgentFrontmatter = (content) => {
+  // Normalize CRLF to LF, then match frontmatter delimiters
+  const normalized = content.replace(/\r\n/g, '\n');
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!match) return { frontmatter: {}, prompt: content };
+
+  const frontmatterStr = match[1];
+  const body = match[2];
+  const frontmatter = {};
+
+  const lines = frontmatterStr.split('\n');
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const colonIdx = line.indexOf(':');
+
+    if (colonIdx <= 0) {
+      i++;
+      continue;
+    }
+
+    const key = line.slice(0, colonIdx).trim();
+    const valueAfterColon = line.slice(colonIdx + 1).trim();
+
+    // Check if next lines are indented sub-keys (nested object)
+    if (valueAfterColon === '' && i + 1 < lines.length && /^\s+/.test(lines[i + 1])) {
+      // Determine the base indentation level of the sub-keys
+      const baseIndent = lines[i + 1].match(/^(\s*)/)[1].length;
+      const parsed = parseNestedBlock(lines, i + 1, baseIndent);
+      frontmatter[key] = parsed.value;
+      i = parsed.nextIndex;
+    } else {
+      // Flat key-value pair
+      let value = valueAfterColon.replace(/^["']|["']$/g, '');
+
+      // Parse typed values
+      if (value === 'true') value = true;
+      else if (value === 'false') value = false;
+      else if (/^-?\d+(\.\d+)?$/.test(value)) value = Number(value);
+
+      frontmatter[key] = value;
+      i++;
+    }
+  }
+
+  return { frontmatter, prompt: body };
+};
+
 export const SuperpowersPlugin = async ({ client, directory }) => {
   const homeDir = os.homedir();
   const superpowersSkillsDir = path.resolve(__dirname, '../../skills');
+  const superpowersAgentsDir = path.resolve(__dirname, '../agents');
   const envConfigDir = normalizePath(process.env.OPENCODE_CONFIG_DIR, homeDir);
   const configDir = envConfigDir || path.join(homeDir, '.config/opencode');
 
@@ -125,6 +226,27 @@ ${toolMapping}
       config.skills.paths = config.skills.paths || [];
       if (!config.skills.paths.includes(superpowersSkillsDir)) {
         config.skills.paths.push(superpowersSkillsDir);
+      }
+
+      // Register agents from .opencode/agents/*.md files
+      config.agent = config.agent || {};
+      if (fs.existsSync(superpowersAgentsDir)) {
+        const agentFiles = fs.readdirSync(superpowersAgentsDir)
+          .filter((f) => f.endsWith('.md'));
+        for (const file of agentFiles) {
+          try {
+            const name = file.replace(/\.md$/, '');
+            // Guard: don't overwrite already-defined agents
+            if (config.agent[name]) continue;
+
+            const filePath = path.join(superpowersAgentsDir, file);
+            const raw = fs.readFileSync(filePath, 'utf8');
+            const { frontmatter, prompt } = parseAgentFrontmatter(raw);
+            config.agent[name] = { ...frontmatter, prompt };
+          } catch (err) {
+            console.warn(`[superpowers] Warning: failed to register agent from ${file}: ${err.message}`);
+          }
+        }
       }
     },
 
