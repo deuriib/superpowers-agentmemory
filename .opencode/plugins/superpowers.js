@@ -123,12 +123,12 @@ ${toolMapping}
         config.skills.paths.push(superpowersSkillsDir);
       }
 
-      // Inject agentmemory MCP server
+      //Inject agentmemory MCP server
       config.mcp = config.mcp || {};
       if (!config.mcp['agentmemory']) {
         config.mcp['agentmemory'] = {
           type: 'local',
-          command: hasBun ? ['bun', 'x', '-y', '@agentmemory/mcp'] : ['npx', '-y', '@agentmemory/mcp'],
+          command: hasBun ? ['bunx', '-y', '@agentmemory/mcp'] : ['npx', '-y', '@agentmemory/mcp'],
           enabled: true,
         };
       }
