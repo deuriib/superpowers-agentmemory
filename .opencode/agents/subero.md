@@ -4,7 +4,6 @@ mode: all
 temperature: 0.3
 color: "#a6e3a1"
 reasoning_effort: high
-hidden: true
 permission:
   task:
     "*": "deny"

@@ -14,7 +14,6 @@ permission:
   external_directory:
     "*": allow
   bash:
-    "*": deny
     "git log *": allow
     "git blame *": allow
     "git status *": allow

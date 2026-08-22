@@ -6,7 +6,6 @@ reasoning_effort: medium
 temperature: 0.5
 color: "#a6e3a1"
 permission:
-  task: deny
   bash:
     "git log*": allow
     "git status*": allow
@@ -22,17 +21,6 @@ permission:
     "mise run*": allow
     "bun *": allow
     "node *": allow
-    "rm -rf *": deny
-    "Remove-Item -Recurse*": deny
-    "git push --force*": deny
-    "git reset --hard*": deny
-    "git clean*": deny
-    "git checkout -- .*": deny
-    "git restore*": deny
-  edit: allow
-  "mise_*": allow
-  webfetch: allow
-  websearch: allow
 ---
 
 ## Rol
