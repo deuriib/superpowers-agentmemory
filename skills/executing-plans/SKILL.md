@@ -5,66 +5,46 @@ description: Use when you have a written implementation plan to execute in a sep
 
 # Executing Plans
 
-## Overview
-
-Load plan from the agentmemory DAG, review critically, execute all tasks, report when complete.
+Load plan from agentmemory DAG, review critically, execute all tasks, report when complete.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
-**Note:** Tell your human partner that Superpowers works much better with access to subagents (Claude Code, Codex CLI, Codex App, Copilot CLI, and Gemini CLI all qualify; see the per-platform tool refs in `../using-superpowers/references/`). If subagents are available, use superpowers:subagent-driven-development instead of this skill.
+**Note:** If subagents are available (Claude Code, Codex CLI, Codex App, Copilot CLI, Gemini CLI), use `superpowers:subagent-driven-development` instead — it's faster and higher quality.
 
 ## The Process
 
-### Step 1: Load and Review Plan
-1. Ensure an isolated workspace: use superpowers:using-git-worktrees to create one or verify the existing one
-2. Read plan from the DAG: `memory_frontier project=<name>` returns unblocked tasks with descriptions
-3. If the controller sent a task brief via signal, read it: `memory_signal_read` (`agentId=<your ID>`)
-4. If the plan references a Spec slot, read it: `memory_slot_get` (`label=<spec slot label>`)
-5. Review critically — identify any questions or concerns about the plan
-6. If concerns: Raise them with your human partner before starting
-7. If no concerns: proceed to execution
+### 1. Load and Review Plan
 
-### Step 2: Execute Tasks
+1. Ensure isolated workspace (`superpowers:using-git-worktrees`)
+2. Read plan: `memory_frontier project=<name>` returns unblocked tasks
+3. Read brief if sent: `memory_signal_read agentId=<your ID>`
+4. Read spec if referenced: `memory_slot_get label=<spec slot label>`
+5. Review critically — raise concerns before starting
 
-For each unblocked task (from `memory_frontier`):
-1. Claim the action: `memory_lease` with `operation=acquire`, `actionId=<task ID>`, `agentId=<your ID>` (prevents other agents from working it)
-2. Mark the action active: `memory_action_update` with `actionId=<task ID>`, `status=active`
-3. Follow each step exactly (task description has bite-sized steps)
-4. Run verifications as specified
-5. Mark as done: `memory_action_update` with `actionId=<task ID>`, `status=done`
-6. Verify: `memory_frontier` now shows the next unblocked task
+### 2. Execute Tasks
 
-### Step 3: Complete Development
+For each unblocked task from `memory_frontier`:
 
-After all tasks complete and verified (memory_frontier returns empty):
-- Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
-- Follow that skill to verify tests, present options, execute choice
+1. **Claim:** `memory_lease operation=acquire actionId=<task ID> agentId=<your ID>`
+2. **Activate:** `memory_action_update actionId=<task ID> status=active`
+3. **Execute:** Follow each step exactly as specified
+4. **Verify:** Run all verifications specified in the task
+5. **Complete:** `memory_action_update actionId=<task ID> status=done`
+6. **Check:** `memory_frontier` shows next unblocked task
 
-## When to Stop and Ask for Help
+### 3. Complete Development
 
-**STOP executing immediately when:**
-- Hit a blocker (missing dependency, test fails, instruction unclear)
-- Plan has critical gaps preventing starting
-- You don't understand an instruction
+When `memory_frontier` returns empty:
+- Use `superpowers:finishing-a-development-branch` to verify tests, present options, execute choice
+
+## When to Stop
+
+Stop immediately and ask for help when:
+- Blocker hit (missing dependency, test fails, instruction unclear)
+- Plan has critical gaps preventing start
 - Verification fails repeatedly
+- Don't understand an instruction
 
 **Ask for clarification rather than guessing.**
 
-## When to Revisit Earlier Steps
-
-**Return to Review (Step 1) when:**
-- Partner updates the plan based on your feedback
-- Fundamental approach needs rethinking
-
-**Don't force through blockers** — stop and ask.
-
-## Remember
-- Review plan critically first (from the DAG, not a file)
-- Follow task steps exactly
-- Don't skip verifications
-- Use `memory_lease` (`operation=acquire`) to claim before working, `memory_action_update` (`status=active`) to mark active, `memory_action_update` (`status=done`) to complete
-- Read briefs via `memory_signal_read`, specs via `memory_slot_get`.
-- Reference skills when plan says to
-- Stop when blocked, don't guess
-- Never start implementation on main/master branch without explicit user consent
+Return to Step 1 when partner updates the plan or approach needs rethinking.

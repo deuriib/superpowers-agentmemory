@@ -5,172 +5,86 @@ description: Use when receiving code review feedback, before implementing sugges
 
 # Code Review Reception
 
-## Overview
-
-Code review requires technical evaluation, not emotional performance.
-
 **Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
 
 ## The Response Pattern
 
-```
-WHEN receiving code review feedback:
-
-1. READ: Complete feedback without reacting
-2. UNDERSTAND: Restate requirement in own words (or ask)
-3. VERIFY: Check against codebase reality + agentmemory context
-4. EVALUATE: Technically sound for THIS codebase?
-5. RESPOND: Technical acknowledgment or reasoned pushback
-6. IMPLEMENT: One item at a time, test each
-```
+1. **READ** — Complete feedback without reacting
+2. **UNDERSTAND** — Restate requirement in own words (or ask)
+3. **VERIFY** — Check against codebase reality + agentmemory context
+4. **EVALUATE** — Technically sound for THIS codebase?
+5. **RESPOND** — Technical acknowledgment or reasoned pushback
+6. **IMPLEMENT** — One item at a time, test each
 
 ## Verify Against agentmemory
 
-Before implementing, check whether the feedback conflicts with past decisions or lessons:
+Before implementing, check for conflicts with past decisions:
 
-1. **`memory_smart_search`** on the review topic — surfaces past decisions, prior discussions, and related work. If the suggestion contradicts a recorded decision, you have grounds for informed pushback.
-2. **`memory_lesson_recall`** on the topic — catches "we tried this before and learned..." lessons that apply to the suggestion.
-3. **`memory_file_history`** on the files the feedback touches — shows what was observed about those files across sessions (why the code is the way it is).
+1. `memory_smart_search` on review topic — past decisions, prior discussions
+2. `memory_lesson_recall` on topic — "we tried this before and learned..."
+3. `memory_file_history` on files touched — why the code is the way it is
 
-Use the results in step 3 (VERIFY) of the Response Pattern: feedback that contradicts recorded decisions or lessons gets technical pushback, not blind implementation.
+Feedback contradicting recorded decisions → technical pushback, not blind implementation.
 
 ## Forbidden Responses
 
-**NEVER:**
-- "You're absolutely right!" (explicit instruction-file violation)
-- "Great point!" / "Excellent feedback!" (performative)
-- "Let me implement that now" (before verification)
+**NEVER:** "You're absolutely right!", "Great point!", "Let me implement that now" (before verification)
 
-**INSTEAD:**
-- Restate the technical requirement
-- Ask clarifying questions
-- Push back with technical reasoning if wrong
-- Just start working (actions > words)
+**INSTEAD:** Restate requirement, ask clarifying questions, push back with reasoning if wrong, just start working.
 
 ## Handling Unclear Feedback
 
-```
-IF any item is unclear:
-  STOP - do not implement anything yet
-  ASK for clarification on unclear items
+If ANY item is unclear: **STOP** — do not implement anything yet. Ask for clarification on unclear items first.
 
-WHY: Items may be related. Partial understanding = wrong implementation.
-```
-
-**Example:**
-```
-your human partner: "Fix 1-6"
-You understand 1,2,3,6. Unclear on 4,5.
-
-❌ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
-✅ RIGHT: "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
-```
+Items may be related. Partial understanding = wrong implementation.
 
 ## Source-Specific Handling
 
-### From your human partner
-- **Trusted** - implement after understanding
-- **Still ask** if scope unclear
-- **No performative agreement**
-- **Skip to action** or technical acknowledgment
+**From your human partner:** Trusted, implement after understanding. Still ask if scope unclear. No performative agreement.
 
-### From External Reviewers
-```
-BEFORE implementing:
-  1. Check: Technically correct for THIS codebase?
-  2. Check: Breaks existing functionality?
-  3. Check: Reason for current implementation? (use `memory_file_history` on the affected files)
-  4. Check: Works on all platforms/versions?
-  5. Check: Does reviewer understand full context?
+**From external reviewers:** Before implementing, check: technically correct? Breaks existing functionality? Reason for current implementation? (`memory_file_history`) Works on all platforms? Does reviewer understand full context?
 
-IF suggestion seems wrong:
-  Push back with technical reasoning
+If wrong → push back with reasoning. If can't verify → say so. If conflicts with human partner's decisions → stop and discuss.
 
-IF can't easily verify:
-  Say so: "I can't verify this without [X]. Should I [investigate/ask/proceed]?"
-
-IF conflicts with your human partner's prior decisions:
-  Stop and discuss with your human partner first
-```
-
-**your human partner's rule:** "External feedback - be skeptical, but check carefully"
-
-## YAGNI Check for "Professional" Features
-
-```
-IF reviewer suggests "implementing properly":
-  grep codebase for actual usage
-
-  IF unused: "This endpoint isn't called. Remove it (YAGNI)?"
-  IF used: Then implement properly
-```
-
-**your human partner's rule:** "You and reviewer both report to me. If we don't need this feature, don't add it."
+**YAGNI check:** If reviewer suggests "implementing properly" → grep codebase for actual usage. If unused → "Remove it (YAGNI)?"
 
 ## Implementation Order
 
-```
-FOR multi-item feedback:
-  1. Clarify anything unclear FIRST
-  2. Then implement in this order:
-     - Blocking issues (breaks, security)
-     - Simple fixes (typos, imports)
-     - Complex fixes (refactoring, logic)
-  3. Test each fix individually
-  4. Verify no regressions
-  5. If the feedback revealed a lesson (a codebase rule, a pattern you missed): save it with `memory_lesson_save` (`content` = the lesson, `tags` = review,<topic>)
-```
+1. Clarify anything unclear FIRST
+2. Then: blocking issues (breaks, security) → simple fixes (typos, imports) → complex fixes (refactoring, logic)
+3. Test each fix individually
+4. Verify no regressions
+5. If lesson revealed: `memory_lesson_save` (tags `review,<topic>`)
 
 ## When To Push Back
 
-Push back when:
-- Suggestion breaks existing functionality
-- Reviewer lacks full context
-- Violates YAGNI (unused feature)
-- Technically incorrect for this stack
-- Legacy/compatibility reasons exist
-- Conflicts with your human partner's architectural decisions (check via `memory_smart_search` / `memory_lesson_recall`)
+Push back when: suggestion breaks functionality, reviewer lacks context, violates YAGNI, technically incorrect for stack, legacy/compatibility reasons, conflicts with human partner's decisions.
 
-**How to push back:**
-- Use technical reasoning, not defensiveness
-- Ask specific questions
-- Reference working tests/code
-- Involve your human partner if architectural
+**How:** Technical reasoning, not defensiveness. Ask specific questions. Reference working tests/code. Involve human partner if architectural.
 
-**If you're uncomfortable pushing back out loud:** Name that tension, then tell your partner about the issue you've seen. They'll appreciate your honesty.
+**If uncomfortable pushing back:** Name the tension, then tell your partner about the issue.
 
 ## Acknowledging Correct Feedback
 
-When feedback IS correct:
 ```
-✅ "Fixed. [Brief description of what changed]"
+✅ "Fixed. [Brief description]"
 ✅ "Good catch - [specific issue]. Fixed in [location]."
 ✅ [Just fix it and show in the code]
 
-❌ "You're absolutely right!"
-❌ "Great point!"
-❌ "Thanks for catching that!"
-❌ "Thanks for [anything]"
-❌ ANY gratitude expression
+❌ "You're absolutely right!" / "Great point!" / "Thanks for catching that!" / ANY gratitude
 ```
 
-**Why no thanks:** Actions speak. Just fix it. The code itself shows you heard the feedback.
+Actions speak. Just fix it.
 
-**If you catch yourself about to write "Thanks":** DELETE IT. State the fix instead.
-
-## Gracefully Correcting Your Pushback
+## Gracefully Correcting Pushback
 
 If you pushed back and were wrong:
 ```
 ✅ "You were right - I checked [X] and it does [Y]. Implementing now."
-✅ "Verified this and you're correct. My initial understanding was wrong because [reason]. Fixing."
-
-❌ Long apology
-❌ Defending why you pushed back
-❌ Over-explaining
+❌ Long apology / defending / over-explaining
 ```
 
-State the correction factually and move on.
+State correction factually and move on.
 
 ## Common Mistakes
 
@@ -186,31 +100,12 @@ State the correction factually and move on.
 
 ## Real Examples
 
-**Performative Agreement (Bad):**
-```
-Reviewer: "Remove legacy code"
-❌ "You're absolutely right! Let me remove that..."
-```
-
-**Technical Verification (Good):**
-```
-Reviewer: "Remove legacy code"
-✅ "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
-```
-
-**YAGNI (Good):**
-```
-Reviewer: "Implement proper metrics tracking with database, date filters, CSV export"
-✅ "Grepped codebase - nothing calls this endpoint. Remove it (YAGNI)? Or is there usage I'm missing?"
-```
-
-**Unclear Item (Good):**
-```
-your human partner: "Fix items 1-6"
-You understand 1,2,3,6. Unclear on 4,5.
-✅ "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
-```
+| Scenario | ❌ Wrong | ✅ Right |
+|----------|---------|---------|
+| "Remove legacy code" | "You're absolutely right! Let me remove..." | "Checking... build target needs 13+. Need legacy for backward compat." |
+| "Implement proper metrics" | "Great point! Let me add that..." | "Grepped codebase - nothing calls this endpoint. Remove (YAGNI)?" |
+| "Fix items 1-6" | Implement 1,2,3,6 now, ask about 4,5 later | "Understand 1,2,3,6. Need clarification on 4 and 5 before proceeding." |
 
 ## GitHub Thread Replies
 
-When replying to inline review comments on GitHub, reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
+Reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as top-level PR comment.

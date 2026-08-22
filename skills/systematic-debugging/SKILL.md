@@ -5,254 +5,80 @@ description: Use when encountering any bug, test failure, or unexpected behavior
 
 # Systematic Debugging
 
-## Overview
-
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 
-**Violating the letter of this process is violating the spirit of debugging.**
-
-## The Iron Law
-
-```
-NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
-```
-
-If you haven't completed Phase 1, you cannot propose fixes.
+**Iron Law:** NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.
 
 ## When to Use
 
-Use for ANY technical issue:
-- Test failures
-- Bugs in production
-- Unexpected behavior
-- Performance problems
-- Build failures
-- Integration issues
+Use for ANY technical issue: test failures, bugs, unexpected behavior, performance problems, build failures, integration issues.
 
-**Use this ESPECIALLY when:**
-- Under time pressure (emergencies make guessing tempting)
-- "Just one quick fix" seems obvious
-- You've already tried multiple fixes
-- Previous fix didn't work
-- You don't fully understand the issue
+**ESPECIALLY when:** under time pressure, "just one quick fix" seems obvious, you've tried multiple fixes already, or you don't fully understand the issue.
 
-**Don't skip when:**
-- Issue seems simple (simple bugs have root causes too)
-- You're in a hurry (rushing guarantees rework)
-- Manager wants it fixed NOW (systematic is faster than thrashing)
+**Don't skip when:** issue seems simple, you're in a hurry, or manager wants it fixed NOW. Systematic is faster than thrashing.
 
 ## The Four Phases
 
-You MUST complete each phase before proceeding to the next.
+Complete each phase before proceeding to the next.
 
 ### Phase 1: Root Cause Investigation
 
 **BEFORE attempting ANY fix:**
 
-1. **Recall Prior Knowledge from agentmemory**
-   - BEFORE touching files, query memory for prior context on this bug (see Debugging Recall Protocol below)
-   - Past sessions may already contain this exact error, its root cause, and the fix
-   - Skip only if the memory server is down (503)
-
-2. **Read Error Messages Carefully**
-   - Don't skip past errors or warnings
-   - They often contain the exact solution
-   - Read stack traces completely
-   - Note line numbers, file paths, error codes
-
-3. **Reproduce Consistently**
-   - Can you trigger it reliably?
-   - What are the exact steps?
-   - Does it happen every time?
-   - If not reproducible → gather more data, don't guess
-
-4. **Check Recent Changes**
-   - What changed that could cause this?
-   - Git diff, recent commits
-   - New dependencies, config changes
-   - Environmental differences
-   - Check agentmemory for the session context behind recent agent-linked commits (`memory_commits` / `memory_commit_lookup`)
-
-5. **Gather Evidence in Multi-Component Systems**
-
-   **WHEN system has multiple components (CI → build → signing, API → service → database):**
-
-   **BEFORE proposing fixes, add diagnostic instrumentation:**
-   ```
-   For EACH component boundary:
-     - Log what data enters component
-     - Log what data exits component
-     - Verify environment/config propagation
-     - Check state at each layer
-
-   Run once to gather evidence showing WHERE it breaks
-   THEN analyze evidence to identify failing component
-   THEN investigate that specific component
-   ```
-
-   **Example (multi-layer system):**
-   ```bash
-   # Layer 1: Workflow
-   echo "=== Secrets available in workflow: ==="
-   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
-
-   # Layer 2: Build script
-   echo "=== Env vars in build script: ==="
-   env | grep IDENTITY || echo "IDENTITY not in environment"
-
-   # Layer 3: Signing script
-   echo "=== Keychain state: ==="
-   security list-keychains
-   security find-identity -v
-
-   # Layer 4: Actual signing
-   codesign --sign "$IDENTITY" --verbose=4 "$APP"
-   ```
-
-   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
-
-6. **Trace Data Flow**
-
-   **WHEN error is deep in call stack:**
-
-   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
-
-   **Quick version:**
-   - Where does bad value originate?
-   - What called this with bad value?
-   - Keep tracing up until you find the source
-   - Fix at source, not at symptom
+1. **Recall from agentmemory** — `memory_smart_search` + `memory_lesson_recall` + `memory_file_history` on files in error. Past sessions may contain this exact bug and fix.
+2. **Read error messages carefully** — don't skip. Stack traces, line numbers, error codes.
+3. **Reproduce consistently** — exact steps, every time. If not reproducible → gather more data, don't guess.
+4. **Check recent changes** — git diff, new deps, config changes. Check `memory_commits` for agent-linked commits.
+5. **Gather evidence in multi-component systems** — log at each component boundary, run once to gather evidence, THEN analyze which layer fails.
+6. **Trace data flow** — where does bad value originate? Trace up to source. Fix at source, not symptom.
 
 ### Phase 2: Pattern Analysis
 
-**Find the pattern before fixing:**
-
-1. **Find Working Examples**
-   - Locate similar working code in same codebase
-   - What works that's similar to what's broken?
-
-2. **Compare Against References**
-   - If implementing pattern, read reference implementation COMPLETELY
-   - Don't skim - read every line
-   - Understand the pattern fully before applying
-
-3. **Identify Differences**
-   - What's different between working and broken?
-   - List every difference, however small
-   - Don't assume "that can't matter"
-
-4. **Understand Dependencies**
-   - What other components does this need?
-   - What settings, config, environment?
-   - What assumptions does it make?
+1. **Find working examples** — similar working code in same codebase
+2. **Compare against references** — read reference implementation COMPLETELY, don't skim
+3. **Identify differences** — list every difference, however small
+4. **Understand dependencies** — what settings, config, environment, assumptions
 
 ### Phase 3: Hypothesis and Testing
 
-**Scientific method:**
-
-1. **Form Single Hypothesis**
-   - State clearly: "I think X is the root cause because Y"
-   - Write it down
-   - Be specific, not vague
-
-2. **Test Minimally**
-   - Make the SMALLEST possible change to test hypothesis
-   - One variable at a time
-   - Don't fix multiple things at once
-
-3. **Verify Before Continuing**
-   - Did it work? Yes → Phase 4
-   - Didn't work? Form NEW hypothesis
-   - DON'T add more fixes on top
-
-4. **When You Don't Know**
-   - Say "I don't understand X"
-   - Don't pretend to know
-   - Ask for help
-   - Research more
+1. **Form single hypothesis** — "I think X is root cause because Y". Be specific.
+2. **Test minimally** — SMALLEST possible change, one variable at a time
+3. **Verify before continuing** — worked? → Phase 4. Didn't? → NEW hypothesis, don't stack fixes
+4. **When you don't know** — say "I don't understand X". Don't pretend.
 
 ### Phase 4: Implementation
 
-**Fix the root cause, not the symptom:**
+1. **Create failing test case** — simplest reproduction, automated if possible. Use `superpowers:test-driven-development`.
+2. **Implement single fix** — address root cause, ONE change, no "while I'm here" improvements
+3. **Verify fix** — tests pass, no regressions. Use `superpowers:verification-before-completion`.
+4. **Save the lesson** — `memory_lesson_save` (tags `bug,<component>`, confidence 0.7)
+5. **If fix doesn't work** — STOP. Count attempts. < 3 → return to Phase 1. ≥ 3 → **question architecture** (step 6)
+6. **If 3+ fixes failed** — architectural problem. Each fix reveals new coupling. STOP and discuss with human partner before attempting more fixes. Query memory for past architectural discussions.
 
-1. **Create Failing Test Case**
-   - Simplest possible reproduction
-   - Automated test if possible
-   - One-off test script if no framework
-   - MUST have before fixing
-   - Use the `superpowers:test-driven-development` skill for writing proper failing tests
+## Debugging Recall Protocol
 
-2. **Implement Single Fix**
-   - Address the root cause identified
-   - ONE change at a time
-   - No "while I'm here" improvements
-   - No bundled refactoring
+Every session starts with memory queries. Skip only if server is down (503).
 
-3. **Verify Fix**
-   - Test passes now?
-   - No other tests broken?
-   - Issue actually resolved?
-   - Use the `superpowers:verification-before-completion` skill before claiming success
+**Core queries (every bug):**
+1. `memory_smart_search` — error message, symptom, or component name
+2. `memory_lesson_recall` — topic
+3. `memory_file_history` — files in error/stack trace
 
-4. **Save the lesson**
-   - Save the root cause and fix with `memory_lesson_save` (tags `bug,<component>`, confidence 0.7)
+**Situation-specific:**
 
-5. **If Fix Doesn't Work**
-   - STOP
-   - Count: How many fixes have you tried?
-   - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 6 below)**
-   - DON'T attempt Fix #4 without architectural discussion
+| Situation | Add |
+|-----------|-----|
+| Recent change suspected | `memory_commits` + `memory_commit_lookup` on breaking commit |
+| 3+ fixes failed | `memory_smart_search` on architecture/pattern being questioned |
+| Timing-dependent error | `memory_sessions` / `memory_timeline` around when it happened |
 
-6. **If 3+ Fixes Failed: Question Architecture**
+**Use results:** Past fix → test minimally. Past failed fix → don't repeat. Lesson → surface as constraint. File history → check what changed. Nothing relevant → proceed without forcing.
 
-   **Pattern indicating architectural problem:**
-   - Each fix reveals new shared state/coupling/problem in different place
-   - Fixes require "massive refactoring" to implement
-   - Each fix creates new symptoms elsewhere
-
-   **STOP and question fundamentals:**
-   - Is this pattern fundamentally sound?
-   - Are we "sticking with it through sheer inertia"?
-   - Should we refactor architecture vs. continue fixing symptoms?
-
-   **Discuss with your human partner before attempting more fixes**
-
-   This is NOT a failed hypothesis - this is a wrong architecture.
-
-   **Also query memory** for past architectural discussions about this pattern (see Debugging Recall Protocol below) — decisions that aren't in the code live in memory.
-
-## Debugging Recall Protocol (agentmemory)
-
-Every debugging session starts by querying memory. This takes seconds and prevents re-diagnosing what's already known — past sessions may already contain this bug, its root cause, and the fix. Skip only if the server is down (503).
-
-Core queries — run these for EVERY bug:
-
-1. **`memory_smart_search`** with the error message, symptom, or component name. Surfaces past occurrences of this bug, past fixes, and related work.
-2. **`memory_lesson_recall`** with the topic. Catches "we tried this before and learned..." — lessons apply directly to the current bug.
-3. **`memory_file_history`** on the files named in the error or stack trace. Shows what was observed about those files across sessions.
-
-Situation-specific queries — add these based on where the investigation leads:
-
-| Situation | Additional queries |
-|-----------|-------------------|
-| **Recent change suspected** (Phase 1 step 4) | + `memory_commits` for agent-linked commits; `memory_commit_lookup` on the breaking commit to recover the session's intent |
-| **3+ fixes failed** (Phase 4 step 5) | + `memory_smart_search` on the architecture/pattern being questioned — was it deliberately chosen? Were there past architectural discussions? |
-| **Error hard to reproduce or timing-dependent** | + `memory_sessions` / `memory_timeline` around when it last happened |
-
-How to use the results:
-
-- **Past fix found** → candidate hypothesis for Phase 3; test it minimally (one variable at a time)
-- **Past failed fix found** → do NOT repeat it; note what was already ruled out
-- **Lesson found** → surface it as a constraint ("Last time we learned Y, so I'll avoid that pattern")
-- **File history found** → check what changed in that file before the bug appeared
-- **Nothing relevant found** → proceed without forcing connections — not every bug has prior context
-
-## Red Flags - STOP and Follow Process
+## Red Flags — STOP and Follow Process
 
 If you catch yourself thinking:
 - "Quick fix for now, investigate later"
-- "Just try changing X and see if it works"
+- "Just try changing X and see"
 - "Add multiple changes, run tests"
 - "Skip the test, I'll manually verify"
 - "It's probably X, let me fix that"
@@ -265,18 +91,15 @@ If you catch yourself thinking:
 - **"One more fix attempt" (when already tried 2+)**
 - **Each fix reveals new problem in different place**
 
-**ALL of these mean: STOP. Return to Phase 1.**
+**ALL mean: STOP. Return to Phase 1.** If 3+ fixes failed → question architecture.
 
-**If 3+ fixes failed:** Question the architecture (see Phase 4.5)
+## Human Partner Signals You're Doing It Wrong
 
-## your human partner's Signals You're Doing It Wrong
-
-**Watch for these redirections:**
-- "Is that not happening?" - You assumed without verifying
-- "Will it show us...?" - You should have added evidence gathering
-- "Stop guessing" - You're proposing fixes without understanding
-- "Ultra-think this" - Question fundamentals, not just symptoms
-- "We're stuck?" (frustrated) - Your approach isn't working
+- "Is that not happening?" — You assumed without verifying
+- "Will it show us...?" — You should have added evidence gathering
+- "Stop guessing" — Proposing fixes without understanding
+- "Ultra-think this" — Question fundamentals, not just symptoms
+- "We're stuck?" (frustrated) — Your approach isn't working
 
 **When you see these:** STOP. Return to Phase 1.
 
@@ -284,41 +107,37 @@ If you catch yourself thinking:
 
 | Excuse | Reality |
 |--------|---------|
-| "Issue is simple, don't need process" | Simple issues have root causes too. Process is fast for simple bugs. |
-| "Emergency, no time for process" | Systematic debugging is FASTER than guess-and-check thrashing. |
-| "Just try this first, then investigate" | First fix sets the pattern. Do it right from the start. |
-| "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it. |
+| "Issue is simple, don't need process" | Simple issues have root causes too. |
+| "Emergency, no time for process" | Systematic is FASTER than thrashing. |
+| "Just try this first, then investigate" | First fix sets the pattern. Do it right. |
+| "I'll write test after confirming fix works" | Untested fixes don't stick. Test first. |
 | "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
-| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
+| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. |
 | "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
-| "This bug is new, memory won't have it" | "New" bugs are often repeats. Thirty seconds of recall can save hours of re-diagnosis. |
-| "I already know what this error means" | Knowing the error ≠ knowing what was tried against it. Check memory for past attempts. |
-| "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem. Question pattern, don't fix again. |
+| "This bug is new, memory won't have it" | "New" bugs are often repeats. |
+| "I already know what this error means" | Knowing error ≠ knowing what was tried. |
+| "One more fix attempt" (after 2+ failures) | 3+ = architectural problem. Question pattern. |
 
 ## Quick Reference
 
 | Phase | Key Activities | Success Criteria |
 |-------|---------------|------------------|
-| **1. Root Cause** | Recall from memory, read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
+| **1. Root Cause** | Recall, read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
 | **2. Pattern** | Find working examples, compare | Identify differences |
 | **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
 | **4. Implementation** | Create test, fix, verify, save lesson | Bug resolved, tests pass |
 
 ## When Process Reveals "No Root Cause"
 
-If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
-
-1. You've completed the process
-2. Document what you investigated
-3. Implement appropriate handling (retry, timeout, error message)
-4. Add monitoring/logging for future investigation
+If investigation reveals truly environmental/timing/external issue:
+1. Document what you investigated
+2. Implement appropriate handling (retry, timeout, error message)
+3. Add monitoring/logging for future investigation
 
 **But:** 95% of "no root cause" cases are incomplete investigation.
 
 ## Supporting Techniques
 
-These techniques are part of systematic debugging and available in this directory:
-
-- **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
-- **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
-- **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
+- `root-cause-tracing.md` — Trace bugs backward through call stack
+- `defense-in-depth.md` — Add validation at multiple layers after finding root cause
+- `condition-based-waiting.md` — Replace arbitrary timeouts with condition polling

@@ -5,21 +5,15 @@ description: Use when completing tasks, implementing major features, or before m
 
 # Requesting Code Review
 
-Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history.
+Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context — never your session's history.
 
 **Core principle:** Review early, review often.
 
 ## When to Request Review
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+**Mandatory:** After each task in subagent-driven development, after completing major feature, before merge to main.
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+**Optional:** When stuck (fresh perspective), before refactoring (baseline check), after fixing complex bug.
 
 ## How to Request
 
@@ -31,77 +25,36 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Create a review checkpoint (agentmemory):**
 ```
-memory_checkpoint
-  operation: create
-  name: "Review: Task N"
-  type: approval
-  linkedActionIds: <task action ID>
+memory_checkpoint operation=create name="Review: Task N" type=approval linkedActionIds=<task action ID>
 ```
-This gates the task until the review passes.
 
 **3. Dispatch code reviewer subagent:**
 
-Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md](code-reviewer.md)
-
-**Placeholders:**
-- `{DESCRIPTION}` - Brief summary of what you built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
+Use `general-purpose` subagent with template at [code-reviewer.md](code-reviewer.md). Fill placeholders:
+- `{DESCRIPTION}` — what you built
+- `{PLAN_OR_REQUIREMENTS}` — what it should do
+- `{BASE_SHA}` — starting commit
+- `{HEAD_SHA}` — ending commit
 
 **4. Act on feedback and resolve checkpoint:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
-- After fixing: `memory_checkpoint` with `operation=resolve`, `checkpointId=<checkpoint ID>`, `status=passed` (or `failed` if unresolved)
-- Save findings to long-term memory: `memory_save` with `content` (the finding), `concepts`, and `files` (observations are captured automatically by hooks)
-
-## Example
-
-```
-[Just completed Task 2: Add verification function]
-
-You: Let me request code review before proceeding.
-
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch code reviewer subagent]
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-  PLAN_OR_REQUIREMENTS: Task 2 of plan <plan_id> in the agentmemory action DAG
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
+- Critical → fix immediately
+- Important → fix before proceeding
+- Minor → note for later
+- Reviewer wrong → push back with reasoning
+- After fixing: `memory_checkpoint operation=resolve checkpointId=<ID> status=passed`
+- Save findings: `memory_save content=<finding> concepts=<topics>`
 
 ## Common Rationalizations
 
 | Excuse | Reality |
 |--------|---------|
-| "I'll just review the diff myself instead of dispatching a reviewer" | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
-| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process. |
+| "I'll review the diff myself" | You're the coordinator — reviewing inline burns context window. Dispatch a reviewer. |
+| "Reviewer needs my session history" | Hand crafted context, never session history. Reviewer stays on work product. |
 
 ## Red Flags
 
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
+**Never:** Skip review because "it's simple", ignore Critical issues, proceed with unfixed Important issues, argue with valid technical feedback.
 
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
+**If reviewer wrong:** Push back with reasoning, show code/tests that prove it works, request clarification.
 
-See template at: [code-reviewer.md](code-reviewer.md)
+Template: [code-reviewer.md](code-reviewer.md)
