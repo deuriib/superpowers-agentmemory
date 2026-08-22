@@ -46,14 +46,6 @@ Process skills first (brainstorming, systematic-debugging), then implementation 
 | "This feels productive" | Undisciplined action wastes time. |
 | "I know what that means" | Knowing ≠ using the skill. |
 
-## Platform Adaptation
-
-Read the reference file for your harness:
-- Codex: `references/codex-tools.md`
-- Pi: `references/pi-tools.md`
-- Antigravity: `references/antigravity-tools.md`
-- Hermes Agent: `references/hermes-tools.md`
-
 ## User Instructions
 
 User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, direct requests) take precedence over skills, which override default behavior. Only skip skill workflows when your human partner explicitly tells you to.

@@ -87,7 +87,12 @@ Path additions:
 
 Use results: reference decisions in questions, surface lessons as constraints, check if past work is reusable, follow established patterns.
 
-## Design Guidelines
+## Cross-Department Work
+
+When brainstorming involves multiple departments:
+- C-levels coordinate via `memory_signal_send type=request` (requires CEO pre-authorization)
+- CEO (montilla) approves cross-department scope before proceeding
+- Each department's C-level owns their domain's implementation
 
 **Presenting:** Scale sections to complexity (sentences if simple, paragraphs if nuanced). Ask after each section. Cover architecture, components, data flow, error handling, testing.
 

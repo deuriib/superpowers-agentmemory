@@ -9,6 +9,15 @@ Execute plans by dispatching a fresh implementer subagent per task, reviewing ea
 
 **Core principle:** Fresh subagent per task + task review + final review = high quality, fast iteration.
 
+## Org Hierarchy
+
+In the swarm hierarchy:
+- **Controller** = C-level orchestrator (vasquez, dauhajre, vera, subero)
+- **Implementer** = specialist from their department
+- **Reviewer** = same C-level or cross-department C-level for Gate 2
+
+The controller claims the action, dispatches to a specialist, reviews the output, and releases the lease.
+
 **Continuous execution:** Do not pause between tasks. Execute all tasks without stopping. The only reasons to stop: irreversible/destructive operations, security-sensitive actions, side effects outside this worktree requiring consent, or a plan so broken every path is a guess.
 
 **Rulings, not stalls.** A running plan does not wait on a human. Conflicts, ambiguities, plan defects — decide them. Record every decision in the DAG as `Ruling: <what> — <why> — <cost if wrong>`. A wrong ruling costs rework; a parked session costs their whole day.

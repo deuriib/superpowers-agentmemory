@@ -9,6 +9,13 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 **Core principle:** Review early, review often.
 
+## Org Hierarchy
+
+Reviewer dispatch follows the swarm hierarchy:
+- **Engineering reviews:** CTO (vasquez) dispatches to qa or architect specialist
+- **Cross-department reviews:** CTO reviews marketing/legal changes that touch code
+- **Final review:** CEO (montilla) for major deliverables
+
 ## When to Request Review
 
 **Mandatory:** After each task in subagent-driven development, after completing major feature, before merge to main.

@@ -9,7 +9,7 @@ Load plan from agentmemory DAG, review critically, execute all tasks, report whe
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
-**Note:** If subagents are available (Claude Code, Codex CLI, Codex App, Copilot CLI, Gemini CLI), use `superpowers:subagent-driven-development` instead — it's faster and higher quality.
+**Note:** If subagents are available, use `superpowers:subagent-driven-development` instead — it's faster and higher quality.
 
 ## The Process
 

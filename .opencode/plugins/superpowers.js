@@ -53,17 +53,6 @@ const normalizePath = (p, homeDir) => {
 // every agent step.  See #1202 for the full analysis.
 let _bootstrapCache = undefined; // undefined = not yet loaded, null = file missing
 
-// Prefer bun; fall back to npx when bun is not on PATH (hosts without bun installed).
-// Evaluated once at plugin load; spawnSync without shell mirrors how OpenCode
-// spawns local MCP servers (PATH resolution), so a missing bun yields status null.
-const hasBun = (() => {
-  try {
-    return spawnSync('bun', ['--version'], { stdio: 'ignore' }).status === 0;
-  } catch {
-    return false;
-  }
-})();
-
 export const SuperpowersPlugin = async ({ client, directory }) => {
   const homeDir = os.homedir();
   const superpowersSkillsDir = path.resolve(__dirname, '../../skills');
@@ -98,12 +87,27 @@ When skills request actions, substitute OpenCode equivalents:
 
 Use OpenCode's native \`skill\` tool to list and load skills.`;
 
+    const orgChart = `**Org Chart (Swarm Hierarchy):**
+\`\`\`
+CEO (Montilla)
+├── CTO (Vasquez) → backend, frontend, devops, qa, architect, explore
+├── CFO (Dauhajre) → accountant, cost-analyst, credit-analyst, financial-analyst, fpna-analyst, payroll-specialist, risk-analyst, treasurer
+├── CMO (Vera) → brand-strategist, content-strategist, copywriter, email-marketer, marketing-analyst, ppc-specialist, seo, social-media
+└── CLO (Subero) → compliance-officer, contract-drafter, ip-counsel, labor-counsel, legal-researcher, privacy-counsel
+\`\`\`
+
+**Dispatch Protocol:** Claim → Activate → Dispatch → Work → Respond → Complete
+**Escalation:** Specialist→C-Level→CEO (never bypass C-level)
+**Review:** C-Level Review → Cross-Dept Check → CEO Final`;
+
     _bootstrapCache = `<EXTREMELY_IMPORTANT>
 You have superpowers.
 
 **IMPORTANT: The using-superpowers skill content is included below. It is ALREADY LOADED - you are currently following it. Do NOT use the skill tool to load "using-superpowers" again - that would be redundant.**
 
 ${content}
+
+${orgChart}
 
 ${toolMapping}
 </EXTREMELY_IMPORTANT>`;
@@ -128,7 +132,7 @@ ${toolMapping}
       if (!config.mcp['agentmemory']) {
         config.mcp['agentmemory'] = {
           type: 'local',
-          command: hasBun ? ['bunx', '-y', '@agentmemory/mcp'] : ['npx', '-y', '@agentmemory/mcp'],
+          command: ['npx', '-y', '@agentmemory/mcp'],
           enabled: true,
         };
       }

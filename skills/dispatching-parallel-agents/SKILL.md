@@ -7,6 +7,19 @@ description: Use when facing 2+ independent tasks that can be worked on without 
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
 
+## Org Hierarchy
+
+In the swarm hierarchy, dispatch follows department lines:
+
+| C-Level | Dispatches To | Department |
+|---------|---------------|------------|
+| vasquez (CTO) | backend, frontend, devops, qa, architect, explore | engineering |
+| dauhajre (CFO) | accountant, cost-analyst, credit-analyst, financial-analyst, fpna-analyst, payroll-specialist, risk-analyst, treasurer | finance |
+| vera (CMO) | brand-strategist, content-strategist, copywriter, email-marketer, marketing-analyst, ppc-specialist, seo, social-media | marketing |
+| subero (CLO) | compliance-officer, contract-drafter, ip-counsel, labor-counsel, legal-researcher, privacy-counsel | legal |
+
+**Cross-department parallel dispatch:** Requires CEO (montilla) authorization.
+
 ## When to Use
 
 **Use when:** 3+ test files failing with different root causes, multiple subsystems broken independently, each problem understood without context from others, no shared state.
