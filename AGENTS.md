@@ -38,6 +38,31 @@ All C-levels follow this exact sequence when dispatching to specialists:
 5. **RESPOND** — `memory_signal_send type=response from=<specialist> to=<c-level>`
 6. **COMPLETE** — `memory_lease operation=release result="summary"`
 
+## Dispatch Briefs (Commander's Intent)
+
+Every dispatch between levels carries a brief containing **WHAT and WHY — never HOW**. The HOW belongs to the receiver. This cascades through the whole chain: CEO → C-Level → specialist.
+
+Brief format (concise; every line earns its place):
+
+```
+WHY   → context / business rationale in one line
+        (+ originating WHY as context when inherited from a higher hop)
+WHAT  → objective + done criteria (what "finished" looks like)
+      → hard constraints only, if any (platform, budget, regulation)
+HOW   → silence. That is the receiver's job.
+```
+
+Rules:
+
+1. **No HOW in briefs.** Specifying solution choices is doing the receiver's job. Constraints are not solutions: "must run on Windows" is a constraint; "use Redis" is a HOW.
+2. **Altitude-adapted language.** The CEO speaks business outcomes ("no double-charging customers — legal and churn risk"). C-Levels translate that into technical objectives for their specialists ("webhook handler must be idempotent, dedup by event_id"). Each level speaks the receiver's language and refines specificity without crossing into implementation.
+3. **WHY propagation.** When work crosses two or more hops, each brief carries the originating WHY as one context line, so specialists serve the real goal — not just the task.
+4. **Concise ≠ incomplete.** Omitting a hard constraint causes expensive rework. If you cannot state WHAT/WHY in a few lines, you have not classified the request — go back before dispatching.
+
+### Evidence Travels Up; Skills Stay With Their Owners
+
+C-levels never run execution skills (`verification-before-completion`, `test-driven-development`, `systematic-debugging`). They *require the skill's evidence* in the response — test output, command results, state checks. Gate 1 review consumes evidence; it does not regenerate it. Specialists generate evidence using their own row's skills and attach it to every report. A brief may name the *done criteria* ("attach verification evidence") but never loads or executes the skill behind them.
+
 ## Role Scoping
 
 Each C-level queries memory scoped to their department via `agentId`:
@@ -71,10 +96,15 @@ These apply to EVERY C-level agent. Department-specific rules go in agent prompt
 2. **NEVER skip the Department Gate.** After ANY deliverable, run the department's specialist reviewer before Gate 1. See `requesting-code-review` skill.
 3. **NEVER ship without C-Level approval.** No deliverable goes out without passing Gate 1 review.
 4. **Dispatch the right specialist.** Don't ask a specialist to do another specialist's job.
+5. **Skill Scope.** Before loading ANY skill, check the Skills Reference table. Never load a skill whose "Agents That Use It" column excludes your role. Out-of-scope loading = doing another role's work (Rule #1).
 
 ## Skills Reference
 
 Skills define **how** work gets done. Agents define **who** does it. When a skill exists for a workflow, agents follow the skill — they don't redefine the process.
+
+This table is **binding role scoping**, not documentation. Loading a skill outside your row violates Hard Rule #1.
+
+**C-level quick reference — you load ONLY:** `requesting-code-review`, `dispatching-parallel-agents`, `subagent-driven-development`, `executing-plans`, `finishing-a-development-branch`, `brainstorming`, `writing-plans` (+ `writing-skills` for montilla/vasquez). Everything else belongs to specialists.
 
 | Workflow | Skill | Agents That Use It |
 |----------|-------|--------------------|
