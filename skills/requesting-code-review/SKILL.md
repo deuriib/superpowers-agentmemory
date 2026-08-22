@@ -5,17 +5,31 @@ description: Use when completing tasks, implementing major features, or before m
 
 # Requesting Code Review
 
-C-level reviews specialist output directly using the 3 quality gates. No subagent dispatch — the C-level IS the reviewer.
+C-level reviews specialist output directly using the quality gates. No subagent dispatch — the C-level IS the reviewer.
 
 **Core principle:** Evidence before claims. C-level verifies, specialist doesn't self-approve.
 
-## Org Hierarchy
+## Gate Sequence
 
-| Gate | Reviewer | Trigger | Verdict |
-|------|----------|---------|---------|
-| Gate 1 | C-Level | Every specialist deliverable | APPROVED / REJECT |
-| Gate 2 | Cross-dept C-Level | Deliverable affects other department | CLEAR / BLOCKED |
-| Gate 3 | CEO (montilla) | Major deliverables | DONE / REWORK |
+| Phase | Gate | Reviewer | Trigger | Verdict |
+|-------|------|----------|---------|---------|
+| Pre-gate | Department Gate | Specialist reviewer | Every specialist deliverable | PASS/FAIL |
+| Gate 1 | C-Level Review | C-Level | Every specialist deliverable | APPROVED / REJECT |
+| Gate 2 | Cross-Dept Check | Cross-dept C-Level | Deliverable affects other department | CLEAR / BLOCKED |
+| Gate 3 | CEO Final | CEO (montilla) | Major deliverables | DONE / REWORK |
+
+## Pre-Gate: Department-Specific Review
+
+Before Gate 1, each department has a mandatory specialist review:
+
+| Department | Gate Name | Specialist Reviewer | When |
+|------------|-----------|-------------------|------|
+| Engineering (CTO) | Quality Gate | `@review-readability`, `@review-reliability`, `@review-resilience`, `@review-risk`, `@review-refuter` | After ANY implementation |
+| Finance (CFO) | Finance Gate | `@finance-reviewer` | After ANY financial deliverable |
+| Marketing (CMO) | Brand Gate | `@brand-strategist` | After ANY content creation |
+| Legal (CLO) | Legal Gate | `@legal-reviewer` | After ANY legal deliverable |
+
+**Flow:** Specialist completes work → Department Gate (specialist review) → Gate 1 (C-Level Review)
 
 ## Gate 1: C-Level Review (mandatory)
 
@@ -88,6 +102,7 @@ After all gates pass:
 | Excuse | Reality |
 |--------|---------|
 | "I'll review the diff myself" | You're the specialist — C-level reviews, not you. |
-| "It's simple, skip review" | Gate 1 is mandatory. No exceptions. |
+| "It's simple, skip review" | Department Gate + Gate 1 are mandatory. No exceptions. |
 | "Reviewer needs my session history" | C-level reads your observation, not your history. |
 | "I'll just approve it myself" | Self-approval defeats the purpose. C-level decides. |
+| "Skip the department gate, it's minor" | Department gates are mandatory pre-gates. No exceptions. |
