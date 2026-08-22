@@ -240,6 +240,16 @@ ${toolMapping}
         if (DEBUG) console.debug("injected MCP server into config");
       }
 
+      // Inject default Agent if not already configured
+      if (!config.default_agent) {
+        config.default_agent = "montilla";
+      }
+
+      // Inject subagent depth if not already configured
+      if (config.subagent_depth === undefined) {
+        config.subagent_depth = 2;
+      }
+
       // Register agents from .opencode/agents/*.md files
       config.agent = config.agent || {};
       if (fs.existsSync(superpowersAgentsDir)) {
