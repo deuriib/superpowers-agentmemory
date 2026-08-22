@@ -9,6 +9,13 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
+## Org Context
+
+Only run this AFTER review gates pass:
+- **Gate 1 + Gate 2 clear** → proceed to finish
+- **Gate 3 (CEO Final) DONE** → proceed to finish
+- **Any gate BLOCKED/REWORK** → fix first, don't finish yet
+
 ## Step 1: Verify Tests
 
 Run the full test suite. If tests fail, report failures and stop — menu comes after a green suite.

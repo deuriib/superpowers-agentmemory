@@ -9,6 +9,14 @@ description: Use when about to claim work is complete, fixed, or passing, before
 
 **Iron Law:** NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE. If you haven't run the verification command in this message, you cannot claim it passes.
 
+## Org Context
+
+This is **pre-gate verification** — you (the specialist) self-check BEFORE the C-level reviews your work.
+
+After you verify and signal completion, Gate 1 (C-Level Review) triggers. The C-level then independently evaluates your output.
+
+**Flow:** Your verification → Signal done → C-level reviews (Gate 1)
+
 ## The Gate
 
 BEFORE claiming any status or expressing satisfaction:

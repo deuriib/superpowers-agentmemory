@@ -5,63 +5,89 @@ description: Use when completing tasks, implementing major features, or before m
 
 # Requesting Code Review
 
-Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context — never your session's history.
+C-level reviews specialist output directly using the 3 quality gates. No subagent dispatch — the C-level IS the reviewer.
 
-**Core principle:** Review early, review often.
+**Core principle:** Evidence before claims. C-level verifies, specialist doesn't self-approve.
 
 ## Org Hierarchy
 
-Reviewer dispatch follows the swarm hierarchy:
-- **Engineering reviews:** CTO (vasquez) dispatches to qa or architect specialist
-- **Cross-department reviews:** CTO reviews marketing/legal changes that touch code
-- **Final review:** CEO (montilla) for major deliverables
+| Gate | Reviewer | Trigger | Verdict |
+|------|----------|---------|---------|
+| Gate 1 | C-Level | Every specialist deliverable | APPROVED / REJECT |
+| Gate 2 | Cross-dept C-Level | Deliverable affects other department | CLEAR / BLOCKED |
+| Gate 3 | CEO (montilla) | Major deliverables | DONE / REWORK |
 
-## When to Request Review
+## Gate 1: C-Level Review (mandatory)
 
-**Mandatory:** After each task in subagent-driven development, after completing major feature, before merge to main.
+Every specialist output goes through C-level review.
 
-**Optional:** When stuck (fresh perspective), before refactoring (baseline check), after fixing complex bug.
+### Flow
 
-## How to Request
+1. Specialist saves report as observation: `memory_save type=observation`
+2. Specialist signals completion: `memory_signal_send type=response from=<specialist> to=<c-level>`
+3. C-level reads report: `memory_smart_search query="report for task <ID>"`
+4. C-level evaluates against task spec
+5. C-level issues verdict
 
-**1. Get git SHAs:**
-```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
-HEAD_SHA=$(git rev-parse HEAD)
-```
+### Verdicts
 
-**2. Create a review checkpoint (agentmemory):**
-```
-memory_checkpoint operation=create name="Review: Task N" type=approval linkedActionIds=<task action ID>
-```
+- **APPROVED:** Work meets spec. Release lease, mark action done.
+- **REJECT:** Work doesn't meet spec. Send findings back to specialist.
 
-**3. Dispatch code reviewer subagent:**
+### Fix Loop
 
-Use `general-purpose` subagent with template at [code-reviewer.md](code-reviewer.md). Fill placeholders:
-- `{DESCRIPTION}` — what you built
-- `{PLAN_OR_REQUIREMENTS}` — what it should do
-- `{BASE_SHA}` — starting commit
-- `{HEAD_SHA}` — ending commit
+- Rounds 1-3: Resume original specialist with findings
+- After 3 rounds: Escalate to CEO with summary of attempts
 
-**4. Act on feedback and resolve checkpoint:**
-- Critical → fix immediately
-- Important → fix before proceeding
-- Minor → note for later
-- Reviewer wrong → push back with reasoning
-- After fixing: `memory_checkpoint operation=resolve checkpointId=<ID> status=passed`
-- Save findings: `memory_save content=<finding> concepts=<topics>`
+## Gate 2: Cross-Department Check (conditional)
+
+Triggered when deliverable affects another department.
+
+**Trigger conditions:**
+- Task touches files/data owned by another department
+- Deliverable changes API contracts used by another team
+- Marketing content requires legal review
+- Financial data requires compliance review
+
+**Flow:**
+1. C-level identifies affected department
+2. C-level sends review request: `memory_signal_send type=request from=<c-level> to=<affected-c-level>`
+3. Affected C-level reviews
+4. Verdict: CLEAR / BLOCKED
+
+**BLOCKED → CEO adjudicates.**
+
+## Gate 3: CEO Final (major deliverables only)
+
+For deliverables with cross-department impact or strategic significance.
+
+**What qualifies as "major":**
+- New feature affecting multiple departments
+- Architecture change
+- Budget expenditure above threshold
+- Public-facing content
+- Legal/compliance changes
+
+**Flow:**
+1. C-level saves summary observation
+2. C-level signals CEO: `memory_signal_send type=handoff from=<c-level> to=montilla`
+3. CEO reviews
+4. Verdict: DONE / REWORK
+
+**REWORK → C-level dispatches fixes (max 2 rounds).**
+
+## Lease Release
+
+After all gates pass:
+1. C-level releases lease: `memory_lease operation=release result="summary"`
+2. Action marked done: `memory_action_update status=done`
+3. Summary logged in DAG
 
 ## Common Rationalizations
 
 | Excuse | Reality |
 |--------|---------|
-| "I'll review the diff myself" | You're the coordinator — reviewing inline burns context window. Dispatch a reviewer. |
-| "Reviewer needs my session history" | Hand crafted context, never session history. Reviewer stays on work product. |
-
-## Red Flags
-
-**Never:** Skip review because "it's simple", ignore Critical issues, proceed with unfixed Important issues, argue with valid technical feedback.
-
-**If reviewer wrong:** Push back with reasoning, show code/tests that prove it works, request clarification.
-
-Template: [code-reviewer.md](code-reviewer.md)
+| "I'll review the diff myself" | You're the specialist — C-level reviews, not you. |
+| "It's simple, skip review" | Gate 1 is mandatory. No exceptions. |
+| "Reviewer needs my session history" | C-level reads your observation, not your history. |
+| "I'll just approve it myself" | Self-approval defeats the purpose. C-level decides. |

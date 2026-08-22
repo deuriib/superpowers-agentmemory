@@ -7,6 +7,18 @@ description: Use when receiving code review feedback, before implementing sugges
 
 **Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
 
+## Org Hierarchy
+
+In the swarm hierarchy, specialists receive feedback from C-levels (Gate 1 REJECT):
+
+1. C-level reviews your observation
+2. C-level issues REJECT with findings
+3. You receive findings via: `memory_signal_read agentId=<your specialist ID>`
+4. You fix, save new observation, signal completion
+5. Max 3 rounds — then C-level escalates to CEO
+
+**Fix loop:** C-level sends findings → specialist fixes → specialist signals done → C-level re-reviews.
+
 ## The Response Pattern
 
 1. **READ** — Complete feedback without reacting
