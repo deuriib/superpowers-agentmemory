@@ -1,8 +1,7 @@
 ---
 description: "Reliability reviewer — audits correctness, bugs, edge cases and error handling; reviews task specs and quality. Use when reviewing logic for bugs; does NOT run the suite (→@qa)."
 mode: subagent
-model: "opencode/nemotron-3-ultra-free"
-reasoning_effort: max
+reasoning_effort: high
 temperature: 0.2
 color: "#06d6a0"
 permission:

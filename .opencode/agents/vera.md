@@ -3,6 +3,7 @@ description: "Senior CMO orchestrator - classifies marketing tasks, plans campai
 mode: all
 temperature: 0.6
 color: "#f5c2e7"
+reasoning_effort: high
 hidden: true
 permission:
   task:

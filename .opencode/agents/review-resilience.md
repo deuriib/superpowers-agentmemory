@@ -1,7 +1,6 @@
 ---
 description: "Resilience reviewer — audits robustness against external failures, timeouts and degradation. Use when reviewing code with external I/O (HTTP, DB, third parties); does NOT hunt pure logic bugs (→@review-reliability)."
 mode: subagent
-model: "opencode/nemotron-3-ultra-free"
 reasoning_effort: high
 temperature: 0.2
 color: "#118ab2"

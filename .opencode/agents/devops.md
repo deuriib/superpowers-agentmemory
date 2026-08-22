@@ -1,8 +1,7 @@
 ---
 description: "DevOps & infrastructure specialist — automation, CI/CD and containers. Use when setting up pipelines, Docker, deployment or infra automation; does NOT build business features."
 mode: subagent
-model: "opencode/nemotron-3.5-lightning-free"
-reasoning_effort: low
+reasoning_effort: medium
 temperature: 0.2
 color: "#fab387"
 permission:

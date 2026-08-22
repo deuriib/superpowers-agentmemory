@@ -1,8 +1,7 @@
 ---
 description: "Codebase explorer — traces and synthesizes information from the local codebase with surgical speed. Use when understanding existing code, finding where things live or tracing flows; read-only, does NOT research upstream."
 mode: subagent
-model: "opencode/nemotron-3.5-lightning-free"
-reasoning_effort: medium
+reasoning_effort: low
 temperature: 0.6
 color: "#74c7ec"
 permission:

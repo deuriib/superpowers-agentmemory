@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { spawnSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DEBUG = process.env.DEBUG === '1' || process.env.DEBUG === 'true';
 
 // Simple frontmatter extraction (avoid dependency on skills-core for bootstrap)
 const extractAndStripFrontmatter = (content) => {
@@ -226,6 +227,17 @@ ${toolMapping}
       config.skills.paths = config.skills.paths || [];
       if (!config.skills.paths.includes(superpowersSkillsDir)) {
         config.skills.paths.push(superpowersSkillsDir);
+      }
+
+      // Inject agentmemory MCP server if not already configured
+      const mcp = (config.mcp ??= {});
+      if (!mcp["agentmemory"]) {
+        mcp["agentmemory"] = {
+          type: "local",
+          command: ["npx", "-y", "@agentmemory/mcp"],
+          enabled: true,
+        };
+        if (DEBUG) console.debug("injected MCP server into config");
       }
 
       // Register agents from .opencode/agents/*.md files

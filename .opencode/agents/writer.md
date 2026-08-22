@@ -2,7 +2,7 @@
 description: "Technical writer — clear documentation, READMEs and technical communication. Use when writing docs, guides or READMEs; does NOT implement or review code."
 mode: subagent
 model: "opencode/mimo-v2.5-free"
-reasoning_effort: high
+reasoning_effort: medium
 temperature: 0.5
 color: "#94e2d5"
 permission:

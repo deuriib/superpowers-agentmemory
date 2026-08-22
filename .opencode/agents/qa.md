@@ -1,8 +1,7 @@
 ---
 description: "QA automation engineer — test strategy, E2E and integration; RUNS the real suite. Use when closing a feature to execute tests and verify behavior; does NOT audit static logic (→@review-reliability)."
 mode: subagent
-model: "opencode/nemotron-3.5-lightning-free"
-reasoning_effort: medium
+reasoning_effort: high
 temperature: 0.3
 color: "#a6e3a1"
 permission:

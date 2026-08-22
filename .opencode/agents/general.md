@@ -1,7 +1,6 @@
 ---
 description: "General executor — maintenance, git hygiene, admin support and config audits. Use for routine chores, repo cleanup, file organization or config checks; NEVER for quality gates, code reviews or features."
 mode: subagent
-model: "opencode/nemotron-3.5-lightning-free"
 reasoning_effort: low
 temperature: 0.4
 color: "#f5c2e7"

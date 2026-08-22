@@ -1,7 +1,6 @@
 ---
 description: "Litigation counsel — dispute risk assessment, litigation strategy and arbitration. Use when evaluating the risk of a lawsuit, planning litigation strategy or assessing arbitration options; does NOT draft contracts (→@contract-drafter) or do legal research (→@legal-researcher)."
 mode: subagent
-model: "opencode/nemotron-3-ultra-free"
 reasoning_effort: max
 permission:
   edit: allow

@@ -3,6 +3,7 @@ description: "Senior CTO orchestrator - classifies tasks, plans, delegates to su
 mode: all
 temperature: 0.3
 color: "#89b4fa"
+reasoning_effort: high
 hidden: true
 permission:
   task:

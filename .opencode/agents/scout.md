@@ -1,7 +1,6 @@
 ---
 description: "Dependency scout — researches upstream code, external docs and libraries without touching the workspace. Use when investigating third-party APIs, dependencies or external documentation; does NOT read the local codebase."
 mode: subagent
-model: "opencode/nemotron-3.5-lightning-free"
 reasoning_effort: medium
 temperature: 0.5
 color: "#f9e2af"

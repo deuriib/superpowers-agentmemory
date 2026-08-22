@@ -1,7 +1,6 @@
 ---
 description: "Risk reviewer — audits security risks, data exposure and business risk in a change. Use when reviewing a diff for risk; does NOT do deep OWASP audits (→@security) or functional correctness (→@review-reliability)."
 mode: subagent
-model: "opencode/nemotron-3-ultra-free"
 reasoning_effort: max
 temperature: 0.2
 color: "#e64553"

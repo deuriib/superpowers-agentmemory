@@ -1,7 +1,6 @@
 ---
 description: "Readability reviewer — audits clarity, structure and maintainability; also reviews docs and skills. Use when reviewing code readability, docs or skills; does NOT hunt bugs (→@review-reliability)."
 mode: subagent
-model: "opencode/nemotron-3.5-lightning-free"
 reasoning_effort: medium
 temperature: 0.2
 color: "#ffd166"
